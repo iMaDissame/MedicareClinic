@@ -34,12 +34,12 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
               </button>
             )}
 
-            <Link to={user?.role === 'admin' ? '/admin' : '/dashboard'} className="flex items-center space-x-2">
+            <Link to="#" className="flex items-center space-x-2">
               <div className="p-2 bg-gradient-to-r from-pink-500 to-rose-500 rounded-lg">
                 <Play className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent hidden sm:block">
-                CourseHub
+                MediCare
               </span>
             </Link>
           </div>

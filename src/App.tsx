@@ -21,7 +21,7 @@ import Unauthorized from './pages/Unauthorized';
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename="/MedicareClinic">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
@@ -55,7 +55,7 @@ function App() {
             path="/dashboard" 
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Layout />
               </ProtectedRoute>
             } 
           />
@@ -65,7 +65,7 @@ function App() {
             path="/course/:courseId" 
             element={
               <ProtectedRoute>
-                <CoursePlayer />
+                <Layout />
               </ProtectedRoute>
             } 
           />
