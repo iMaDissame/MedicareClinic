@@ -2,18 +2,12 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Schema;
+use App\Http\Controllers\VideoController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserManagementController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\VideoController;
-
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-*/
 
 // User/Student Authentication Routes
 Route::group(['prefix' => 'auth'], function () {
@@ -37,6 +31,9 @@ Route::group(['prefix' => 'admin'], function () {
 
     // Admin Protected Routes
     Route::middleware('auth:admin')->group(function () {
+        // Dashboard stats - MOVED INSIDE ADMIN GROUP
+        Route::get('dashboard/stats', [DashboardController::class, 'stats']);
+
         // User Management Routes
         Route::get('users/statistics', [UserManagementController::class, 'statistics']);
         Route::get('users', [UserManagementController::class, 'index']);
@@ -68,5 +65,3 @@ Route::group(['prefix' => 'admin'], function () {
         Route::post('categories/{category}/assign-users', [CategoryController::class, 'assignUsers']);
     });
 });
-
-
