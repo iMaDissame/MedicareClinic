@@ -165,7 +165,11 @@ const LandingPage: React.FC = () => {
       isValid = false;
     }
 
-    // No email validation required, allow empty email
+    // Email is optional, but if provided, must be a valid email format
+    if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Format d'email invalide";
+      isValid = false;
+    }
 
     if (!formData.message.trim()) {
       errors.message = "Le message est requis";
@@ -533,11 +537,11 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center mt-6">
-              <img 
-                src="aa.png" 
-                alt="Logo Medicare Clinic" 
-                className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2" 
-              />
+             <img 
+              src="https://imadissame.github.io/MedicareClinic/aa.png" 
+              alt="Logo Medicare Clinic" 
+              className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2" 
+            />
             </div>
             {/* Navigation bureau */}
             <div className="hidden md:flex items-center space-x-8">
@@ -846,21 +850,21 @@ const LandingPage: React.FC = () => {
       </section>
       {/* Module Modal */}
       {isModuleModalOpen && selectedModule && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className={`${selectedModule.isAvailable ? 'bg-gradient-to-r from-pink-400 to-rose-500' : 'bg-gradient-to-r from-gray-400 to-gray-500'} w-12 h-12 rounded-full flex items-center justify-center mr-4`}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto m-2">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start sm:items-center flex-col sm:flex-row">
+                  <div className={`${selectedModule.isAvailable ? 'bg-gradient-to-r from-pink-400 to-rose-500' : 'bg-gradient-to-r from-gray-400 to-gray-500'} w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center mb-2 sm:mb-0 sm:mr-4`}>
                     {selectedModule.isAvailable ? (
-                      <Play className="h-6 w-6 text-white" />
+                      <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                     ) : (
-                      <Clock className="h-6 w-6 text-white" />
+                      <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                     )}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{selectedModule.title}</h2>
-                    <div className="flex items-center space-x-4 mt-1">
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{selectedModule.title}</h2>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1">
                       <span className="text-sm text-gray-500 flex items-center">
                         <Clock className="h-4 w-4 mr-1" />
                         {selectedModule.duration}
@@ -885,35 +889,35 @@ const LandingPage: React.FC = () => {
                   onClick={closeModuleModal}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <X className="h-6 w-6 text-gray-500" />
+                  <X className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
                 </button>
               </div>
             </div>
             
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <p className="text-gray-600 mb-6">{selectedModule.description}</p>
               
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {selectedModule.content.sections.map((section: { title: string; content: string }, index: number) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                      <div className="bg-pink-100 text-pink-600 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold mr-3">
+                  <div key={index} className="bg-gray-50 rounded-lg p-4 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center">
+                      <div className="bg-pink-100 text-pink-600 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold mr-2 sm:mr-3 flex-shrink-0">
                         {index + 1}
                       </div>
-                      {section.title}
+                      <span>{section.title}</span>
                     </h3>
-                    <p className="text-gray-700 leading-relaxed">{section.content}</p>
+                    <p className="text-gray-700 text-sm sm:text-base leading-relaxed">{section.content}</p>
                   </div>
                 ))}
               </div>
               
-              <div className="mt-8 text-center">
+              <div className="mt-6 sm:mt-8 text-center">
                 {selectedModule.isAvailable ? (
-                  <Link to="/login" className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-8 py-3 rounded-lg hover:opacity-90 transition-opacity font-medium inline-block">
+                  <Link to="/login" className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg hover:opacity-90 transition-opacity font-medium inline-block">
                     Commencer ce module
                   </Link>
                 ) : (
-                  <button className="bg-gray-400 text-white px-8 py-3 rounded-lg cursor-not-allowed font-medium">
+                  <button className="bg-gray-400 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg cursor-not-allowed font-medium">
                     Bientôt Disponible
                   </button>
                 )}
@@ -1231,6 +1235,7 @@ const LandingPage: React.FC = () => {
                 className="w-full h-full rounded-lg" 
                 style={{ border: 0 }} 
                 allowFullScreen 
+                
                 loading="lazy" 
                 referrerPolicy="no-referrer-when-downgrade"
               ></iframe>
@@ -1246,6 +1251,17 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Scroll to Top Button */}
+      <button 
+        onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+        className="fixed bottom-6 right-6 bg-pink-500 text-white p-3 rounded-full shadow-lg hover:bg-pink-600 transition-colors z-40"
+        aria-label="Retour en haut"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+        </svg>
+      </button>
 
       <style>{`
         .scrollbar-hide {
