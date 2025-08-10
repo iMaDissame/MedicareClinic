@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CoursePlayer from './pages/CoursePlayer';
+import VideoWatchPage from './pages/VideoWatchPage'; // Import the VideoWatchPage
 import AdminDashboard from './pages/AdminDashboard';
 import VideoManagement from './pages/admin/VideoManagement';
 import AddVideo from './pages/admin/AddVideo';
@@ -49,6 +50,9 @@ function App() {
             
             {/* Course player route */}
             <Route path="course/:courseId" element={<CoursePlayer />} />
+            
+            {/* Video watch page route */}
+            <Route path="watch/:id" element={<VideoWatchPage />} />
           </Route>
 
           {/* Admin Routes - All under /admin prefix */}
@@ -68,6 +72,9 @@ function App() {
             <Route path="videos" element={<VideoManagement />} />
             <Route path="videos/new" element={<AddVideo />} />
             <Route path="videos/edit/:courseId" element={<EditVideo />} />
+            
+            {/* Video watch page route for admin preview */}
+            <Route path="videos/watch/:id" element={<VideoWatchPage />} />
             
             {/* Category Management Routes */}
             <Route path="categories" element={<CategoryManagement />} />

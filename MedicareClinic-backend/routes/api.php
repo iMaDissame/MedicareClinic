@@ -8,6 +8,7 @@ use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\CommentController;
 
 // User/Student Authentication Routes
 Route::group(['prefix' => 'auth'], function () {
@@ -16,10 +17,16 @@ Route::group(['prefix' => 'auth'], function () {
     Route::get('me', [UserAuthController::class, 'me'])->middleware('auth:api');
 });
 
+// Public Routes (accessible without authentication)
+Route::get('videos/{video}', [VideoController::class, 'show']); // Public video view with comments
+
 // Student Protected Routes
 Route::middleware('auth:api')->group(function () {
     Route::get('my-videos', [VideoController::class, 'getUserVideos']);
-    Route::get('videos/{video}', [VideoController::class, 'show']);
+
+    // Comment routes for authenticated users
+    Route::post('videos/{video}/comments', [VideoController::class, 'addComment']);
+    Route::delete('comments/{comment}', [CommentController::class, 'destroy']); // Users can delete their own comments
 });
 
 // Admin Authentication Routes
@@ -31,7 +38,7 @@ Route::group(['prefix' => 'admin'], function () {
 
     // Admin Protected Routes
     Route::middleware('auth:admin')->group(function () {
-        // Dashboard stats - MOVED INSIDE ADMIN GROUP
+        // Dashboard stats
         Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
         // User Management Routes
@@ -48,7 +55,6 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('videos/statistics', [VideoController::class, 'statistics']);
         Route::get('videos', [VideoController::class, 'index']);
         Route::post('videos', [VideoController::class, 'store']);
-        Route::get('videos/{video}', [VideoController::class, 'show']);
         Route::put('videos/{video}', [VideoController::class, 'update']);
         Route::delete('videos/{video}', [VideoController::class, 'destroy']);
         Route::patch('videos/{video}/toggle-publish', [VideoController::class, 'togglePublishStatus']);
@@ -63,5 +69,23 @@ Route::group(['prefix' => 'admin'], function () {
         Route::put('categories/{category}', [CategoryController::class, 'update']);
         Route::delete('categories/{category}', [CategoryController::class, 'destroy']);
         Route::post('categories/{category}/assign-users', [CategoryController::class, 'assignUsers']);
+
+        // Comment Management Routes (Admin only)
+        Route::prefix('comments')->group(function () {
+            Route::get('/', [CommentController::class, 'index']); // All comments
+            Route::get('/pending', [CommentController::class, 'pending']); // Pending approval
+            Route::get('/statistics', [CommentController::class, 'statistics']); // Comment stats
+            Route::patch('/{comment}/approve', [CommentController::class, 'approve']);
+            Route::patch('/{comment}/reject', [CommentController::class, 'reject']);
+            Route::delete('/{comment}', [CommentController::class, 'destroy']);
+        });
     });
+});
+
+// Routes accessible by both admin and regular users (with proper authentication)
+Route::middleware(['auth:api,admin'])->group(function () {
+    Route::post('videos/{video}/comments', [VideoController::class, 'addComment']);
+    Route::patch('comments/{comment}/approve', [CommentController::class, 'approve']);
+    Route::patch('comments/{comment}/reject', [CommentController::class, 'reject']);
+    Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
 });

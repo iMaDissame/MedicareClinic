@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Video, Edit, Trash2, Eye, EyeOff, Plus, Calendar, AlertCircle, Play, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
@@ -33,64 +33,6 @@ interface ConfirmModalProps {
   confirmText?: string;
   isDestructive?: boolean;
 }
-
-interface VideoPlayerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  video: VideoData | null;
-}
-
-const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ isOpen, onClose, video }) => {
-  if (!isOpen || !video) return null;
-
-  const getVideoUrl = () => {
-    if (video.video_url) {
-      return video.video_url;
-    }
-    
-    if (video.video_path) {
-      // Use the Laravel backend URL + storage path
-      // The API should return the path like "videos/filename.mp4"
-      const fullUrl = `http://127.0.0.1:8000/storage/${video.video_path}`;
-      console.log('Constructed video URL:', fullUrl, 'from path:', video.video_path);
-      return fullUrl;
-    }
-    
-    return '';
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">{video.title}</h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="p-4">
-          <video
-            controls
-            className="w-full max-h-[60vh]"
-            src={getVideoUrl()}
-            poster={video.cover_url}
-          >
-            Your browser does not support the video tag.
-          </video>
-          {video.description && (
-            <div className="mt-4">
-              <h4 className="font-medium text-gray-900 mb-2">Description</h4>
-              <p className="text-gray-600 text-sm">{video.description}</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({ 
   isOpen, 
@@ -133,6 +75,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
 };
 
 const VideoManagement: React.FC = () => {
+  const navigate = useNavigate();
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,16 +90,8 @@ const VideoManagement: React.FC = () => {
     videoId: null,
     videoTitle: ''
   });
-  const [videoPlayerModal, setVideoPlayerModal] = useState<{
-    isOpen: boolean;
-    video: VideoData | null;
-  }>({
-    isOpen: false,
-    video: null
-  });
 
   useEffect(() => {
-    // Add error boundary for useEffect
     try {
       fetchVideos();
     } catch (error) {
@@ -193,14 +128,11 @@ const VideoManagement: React.FC = () => {
       const response = await axiosClient.patch(`/admin/videos/${videoId}/toggle-publish`);
       
       if (response.data.success) {
-        // Update the video in the local state
         setVideos(prev => prev.map(video => 
           video.id === videoId 
             ? { ...video, is_published: !video.is_published }
             : video
         ));
-        
-        // Show success message (you could use a toast notification here)
         alert(response.data.message);
       } else {
         alert(response.data.message || 'Failed to update publish status');
@@ -218,7 +150,6 @@ const VideoManagement: React.FC = () => {
       const response = await axiosClient.delete(`/admin/videos/${videoId}`);
       
       if (response.data.success) {
-        // Remove the video from local state
         setVideos(prev => prev.filter(video => video.id !== videoId));
         alert(response.data.message);
       } else {
@@ -241,18 +172,8 @@ const VideoManagement: React.FC = () => {
     });
   };
 
-  const openVideoPlayer = (video: VideoData) => {
-    setVideoPlayerModal({
-      isOpen: true,
-      video
-    });
-  };
-
-  const closeVideoPlayer = () => {
-    setVideoPlayerModal({
-      isOpen: false,
-      video: null
-    });
+  const handleImageClick = (videoId: number) => {
+    navigate(`/admin/videos/watch/${videoId}`);
   };
 
   const handleConfirmAction = () => {
@@ -298,7 +219,6 @@ const VideoManagement: React.FC = () => {
     }
   };
 
-  // Add early return for any critical errors
   if (error && videos.length === 0 && !loading) {
     return (
       <div className="space-y-8">
@@ -346,41 +266,6 @@ const VideoManagement: React.FC = () => {
         <div className="flex justify-center items-center h-64">
           <div className="text-gray-600">Loading videos...</div>
         </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Video Management</h1>
-            <p className="text-gray-600 mt-2">Manage your course videos and publishing status</p>
-          </div>
-          <Link to="/admin/videos/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New Video
-            </Button>
-          </Link>
-        </div>
-        <Card className="p-6 bg-red-50 border-red-200">
-          <div className="flex items-center">
-            <AlertCircle className="h-6 w-6 text-red-500 mr-3" />
-            <div>
-              <h3 className="font-semibold text-red-900">Error Loading Videos</h3>
-              <p className="text-red-700 text-sm mt-1">{error}</p>
-            </div>
-          </div>
-          <Button 
-            onClick={fetchVideos} 
-            variant="secondary" 
-            className="mt-4"
-          >
-            Try Again
-          </Button>
-        </Card>
       </div>
     );
   }
@@ -457,7 +342,7 @@ const VideoManagement: React.FC = () => {
               onDelete={(videoId, videoTitle) => 
                 openConfirmModal('delete', videoId, videoTitle)
               }
-              onPlay={(video) => openVideoPlayer(video)}
+              onImageClick={(videoId) => handleImageClick(videoId)}
             />
           ))}
           {publishedVideos.length === 0 && (
@@ -488,7 +373,7 @@ const VideoManagement: React.FC = () => {
               onDelete={(videoId, videoTitle) => 
                 openConfirmModal('delete', videoId, videoTitle)
               }
-              onPlay={(video) => openVideoPlayer(video)}
+              onImageClick={(videoId) => handleImageClick(videoId)}
             />
           ))}
           {unpublishedVideos.length === 0 && (
@@ -526,12 +411,6 @@ const VideoManagement: React.FC = () => {
         onConfirm={handleConfirmAction}
         {...getConfirmModalProps()}
       />
-
-      <VideoPlayerModal
-        isOpen={videoPlayerModal.isOpen}
-        onClose={closeVideoPlayer}
-        video={videoPlayerModal.video}
-      />
     </div>
   );
 };
@@ -540,10 +419,10 @@ interface VideoCardProps {
   video: VideoData;
   onTogglePublish: (videoId: number, videoTitle: string) => void;
   onDelete: (videoId: number, videoTitle: string) => void;
-  onPlay: (video: VideoData) => void;
+  onImageClick: (videoId: number) => void;
 }
 
-const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete, onPlay }) => {
+const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete, onImageClick }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -560,10 +439,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
     
     // If we have a cover_image path, construct the URL for Laravel storage
     if (video.cover_image) {
-      // Use the Laravel backend URL + storage path
-      // Remove 'covers/' from the path if it's already included
-      const cleanPath = video.cover_image.startsWith('covers/') ? video.cover_image : `covers/${video.cover_image}`;
-      return `http://127.0.0.1:8000/storage/${cleanPath}`;
+      return `http://127.0.0.1:8000/storage/${video.cover_image}`;
     }
     
     // Return placeholder image if no cover image
@@ -576,7 +452,8 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
         <img
           src={getCoverImageUrl()}
           alt={video.title}
-          className="w-full h-32 object-cover"
+          className="w-full h-48 object-cover cursor-pointer"
+          onClick={() => onImageClick(video.id)}
           onError={(e) => {
             // Fallback to a placeholder image if the cover image fails to load
             (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"%3E%3Crect width="400" height="200" fill="%23f3f4f6"/%3E%3Ctext x="200" y="100" text-anchor="middle" dy="0.3em" font-family="Arial, sans-serif" font-size="16" fill="%236b7280"%3ENo Image%3C/text%3E%3C/svg%3E';
@@ -584,11 +461,13 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
         />
         
         {/* Play button overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+        <div 
+          className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center cursor-pointer"
+          onClick={() => onImageClick(video.id)}
+        >
           <button
-            onClick={() => onPlay(video)}
             className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 transform hover:scale-110 transition-transform"
-            title="Play video"
+            title="Watch video"
           >
             <Play className="h-6 w-6 text-gray-700 ml-1" />
           </button>
@@ -626,12 +505,14 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
           </span>
         </div>
 
-        <div className="flex space-x-2">
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          {/* Publish/Unpublish button */}
           <Button
             size="sm"
             variant={video.is_published ? 'secondary' : 'primary'}
             onClick={() => onTogglePublish(video.id, video.title)}
-            className="flex-1"
+            className="col-span-1"
           >
             {video.is_published ? (
               <>
@@ -645,18 +526,25 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
               </>
             )}
           </Button>
-          <Link to={`/admin/videos/edit/${video.id}`}>
-            <Button size="sm" variant="ghost" title="Edit video">
-              <Edit className="h-3 w-3" />
+          
+          {/* Edit button */}
+          <Link to={`/admin/videos/edit/${video.id}`} className="col-span-1">
+            <Button size="sm" variant="ghost" className="w-full" title="Edit video">
+              <Edit className="h-3 w-3 mr-1" />
+              Edit
             </Button>
           </Link>
+          
+          {/* Delete button - spans full width on second row */}
           <Button
             size="sm"
             variant="danger"
             onClick={() => onDelete(video.id, video.title)}
             title="Delete video"
+            className="col-span-2"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-3 w-3 mr-1" />
+            Delete
           </Button>
         </div>
       </div>

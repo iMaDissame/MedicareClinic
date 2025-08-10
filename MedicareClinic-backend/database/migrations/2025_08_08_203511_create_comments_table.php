@@ -13,7 +13,16 @@ return new class extends Migration
     {
         Schema::create('comments', function (Blueprint $table) {
             $table->id();
+            $table->text('content');
+            $table->boolean('is_approved')->default(false);
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('video_id')->constrained()->onDelete('cascade');
             $table->timestamps();
+
+            // Indexes for performance
+            $table->index(['video_id', 'is_approved']);
+            $table->index(['user_id']);
+            $table->index(['created_at']);
         });
     }
 
