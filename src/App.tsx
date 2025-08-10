@@ -12,6 +12,9 @@ import AdminDashboard from './pages/AdminDashboard';
 import VideoManagement from './pages/admin/VideoManagement';
 import AddVideo from './pages/admin/AddVideo';
 import EditVideo from './pages/admin/EditVideo';
+import CategoryManagement from './pages/admin/Category/CategoryManagement';
+import EditCategory from './pages/admin/Category/EditCategory';
+import AssignUsers from './pages/admin/AssignUsers';
 import UserManagement from './pages/admin/UserManagement';
 import UserProgress from './pages/admin/UserProgress';
 import PreviewPortal from './pages/admin/PreviewPortal';
@@ -23,54 +26,32 @@ function App() {
     <AuthProvider>
       <Router basename="/MedicareClinic">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/access-expired" element={<AccessExpired />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
-          
-          {/* User Routes - Fix the nested routes */}
-          <Route path="/app" element={<Layout />}>
-            <Route index element={<Navigate to="dashboard" />} />
-            <Route
-              path="dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            
-            <Route
-              path="course/:courseId"
-              element={
-                <ProtectedRoute>
-                  <CoursePlayer />
-                </ProtectedRoute>
-              }
-            />
-          </Route>
-          
-          {/* Add direct route for dashboard */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Add direct route for course viewing */}
-          <Route 
-            path="/course/:courseId" 
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            } 
-          />
 
-          {/* Admin Routes */}
+          {/* Student/Client Routes - All under /app prefix */}
+          <Route 
+            path="/app" 
+            element={
+              <ProtectedRoute requiredRole="users">
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            {/* Default redirect to dashboard when accessing /app */}
+            <Route index element={<Navigate to="dashboard" replace />} />
+            
+            {/* Dashboard route */}
+            <Route path="dashboard" element={<Dashboard />} />
+            
+            {/* Course player route */}
+            <Route path="course/:courseId" element={<CoursePlayer />} />
+          </Route>
+
+          {/* Admin Routes - All under /admin prefix */}
           <Route
             path="/admin"
             element={
@@ -79,21 +60,54 @@ function App() {
               </ProtectedRoute>
             }
           >
+            {/* Default redirect to dashboard when accessing /admin */}
             <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            
+            {/* Video Management Routes */}
             <Route path="videos" element={<VideoManagement />} />
             <Route path="videos/new" element={<AddVideo />} />
             <Route path="videos/edit/:courseId" element={<EditVideo />} />
+            
+            {/* Category Management Routes */}
+            <Route path="categories" element={<CategoryManagement />} />
+            <Route path="categories/edit/:categoryId" element={<EditCategory />} />
+            <Route path="categories/assign/:categoryId" element={<AssignUsers />} />
+            
+            {/* User Management Routes */}
             <Route path="users" element={<UserManagement />} />
             <Route path="progress" element={<UserProgress />} />
             <Route path="preview" element={<PreviewPortal />} />
           </Route>
-          
-          {/* Add a catch-all route for debugging */}
+
+          {/* Fallback Routes - Clean up any legacy routes */}
+          <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+          <Route path="/course/:courseId" element={<Navigate to="/app/course/:courseId" replace />} />
+
+          {/* Catch-all route for debugging */}
           <Route path="*" element={
-            <div className="p-8 text-center">
-              <h2 className="text-2xl font-bold mb-4">Page Not Found</h2>
-              <p className="mb-4">The path "{window.location.pathname}" doesn't exist or you don't have access.</p>
-              <p><a href="/login" className="text-blue-600 hover:underline">Return to login</a></p>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
+              <div className="text-center max-w-md">
+                <h2 className="text-2xl font-bold mb-4 text-gray-900">Page Not Found</h2>
+                <p className="mb-4 text-gray-600">
+                  The path "{window.location.pathname}" doesn't exist or you don't have access.
+                </p>
+                <div className="space-y-2">
+                  <a 
+                    href="/MedicareClinic/login" 
+                    className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Go to Login
+                  </a>
+                  <br />
+                  <a 
+                    href="/MedicareClinic/" 
+                    className="inline-block text-gray-600 hover:text-gray-800 transition"
+                  >
+                    Return to Home
+                  </a>
+                </div>
+              </div>
             </div>
           } />
         </Routes>

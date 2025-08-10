@@ -1,45 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthState } from '../types';
+import axiosClient from '../services/axiosClient';
+import { AuthState } from '../types';
 
 interface AuthContextType extends AuthState {
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (usernameOrEmail: string, password: string) => Promise<boolean>;
   logout: () => void;
   checkAccess: () => boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
-
-// Default users with both admin and student accounts
-const defaultUsers: User[] = [
-  {
-    id: '1',
-    username: 'admin',
-    password: 'admin123',
-    role: 'admin',
-    accessStart: '2024-01-01',
-    accessEnd: '2025-12-31',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    username: 'client',
-    password: 'client123',
-    role: 'user',
-    accessStart: '2024-01-01',
-    accessEnd: '2025-12-31',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  }
-];
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -50,114 +26,120 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user: null,
     isAuthenticated: false,
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize or update users in localStorage
-    const usersInStorage = localStorage.getItem('users');
-    
-    if (!usersInStorage) {
-      // If no users exist, initialize with default users
-      localStorage.setItem('users', JSON.stringify(defaultUsers));
-      console.log("Default users initialized in localStorage");
-    } else {
-      // If users exist, ensure default users are included
-      try {
-        const existingUsers = JSON.parse(usersInStorage);
-        let needsUpdate = false;
-        
-        // Check for admin account
-        if (!existingUsers.some((u: User) => u.username === 'admin')) {
-          existingUsers.push(defaultUsers[0]);
-          needsUpdate = true;
-        }
-        
-        // Check for client account
-        if (!existingUsers.some((u: User) => u.username === 'client')) {
-          existingUsers.push(defaultUsers[1]);
-          needsUpdate = true;
-        }
-        
-        // Update localStorage if changes were made
-        if (needsUpdate) {
-          localStorage.setItem('users', JSON.stringify(existingUsers));
-          console.log("Added missing default users");
-        }
-      } catch (error) {
-        console.error("Error processing users:", error);
-        // Reset to defaults if there was an error
-        localStorage.setItem('users', JSON.stringify(defaultUsers));
-      }
-    }
-    
-    // Check for current user session
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        const now = new Date();
-        const accessEnd = new Date(user.accessEnd);
-        
-        if (user.isActive && now <= accessEnd) {
-          setAuthState({ user, isAuthenticated: true });
-        } else {
+    const validateStoredAuth = async () => {
+      const savedUser = localStorage.getItem('currentUser');
+      const authToken = localStorage.getItem('authToken');
+      
+      if (savedUser && authToken) {
+        try {
+          const user = JSON.parse(savedUser);
+          
+          // Choose the correct endpoint based on user role
+          const endpoint = user.role === 'admin' ? '/admin/me' : '/auth/me';
+          const response = await axiosClient.get(endpoint);
+          
+          if (response.data) {
+            setAuthState({
+              user: response.data,
+              isAuthenticated: true,
+            });
+          } else {
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+          }
+        } catch (error) {
+          console.log('Stored auth token is invalid:', error);
           localStorage.removeItem('currentUser');
-        }
-      } catch (error) {
-        console.error("Error processing current user:", error);
-        localStorage.removeItem('currentUser');
-      }
-    }
-  }, []);
-
-  const login = async (username: string, password: string): Promise<boolean> => {
-    try {
-      // Get users from localStorage or use defaults
-      const usersString = localStorage.getItem('users');
-      const users = usersString ? JSON.parse(usersString) : defaultUsers;
-      
-      console.log("Login attempt for:", username);
-      
-      // Find user with matching username and password
-      const user = users.find((u: User) => 
-        u.username === username && u.password === password
-      );
-      
-      if (user && user.isActive) {
-        const now = new Date();
-        const accessEnd = new Date(user.accessEnd);
-        
-        if (now <= accessEnd) {
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          setAuthState({ user, isAuthenticated: true });
-          console.log("Login successful for:", username);
-          return true;
-        } else {
-          console.log("Access expired for:", username);
+          localStorage.removeItem('authToken');
+          setAuthState({
+            user: null,
+            isAuthenticated: false,
+          });
         }
       } else {
-        console.log("Invalid credentials or inactive user for:", username);
+        setAuthState({
+          user: null,
+          isAuthenticated: false,
+        });
       }
+      
+      setIsLoading(false);
+    };
+
+    validateStoredAuth();
+  }, []);
+
+  const login = async (usernameOrEmail: string, password: string): Promise<boolean> => {
+    try {
+      console.log('Attempting login with:', { login: usernameOrEmail });
+      
+      // Try admin login first
+      let response;
+      let isAdmin = false;
+      
+      try {
+        response = await axiosClient.post('/admin/login', {
+          login: usernameOrEmail,
+          password,
+        });
+        isAdmin = true;
+        console.log('Admin login successful:', response.data);
+      } catch (adminError) {
+        console.log('Admin login failed, trying user login:', adminError.response?.status);
+        
+        // If admin login fails, try user login
+        try {
+          response = await axiosClient.post('/auth/login', {
+            login: usernameOrEmail,
+            password,
+          });
+          console.log('User login successful:', response.data);
+        } catch (userError) {
+          console.log('Both login attempts failed');
+          return false;
+        }
+      }
+
+      if (response?.data?.access_token && response?.data?.user) {
+        localStorage.setItem('authToken', response.data.access_token);
+        localStorage.setItem('currentUser', JSON.stringify(response.data.user));
+
+        setAuthState({
+          user: response.data.user,
+          isAuthenticated: true,
+        });
+
+        return true;
+      }
+      
       return false;
     } catch (error) {
-      console.error("Login error:", error);
+      console.error('Login error:', error);
       return false;
     }
   };
 
   const logout = () => {
+    localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
     setAuthState({ user: null, isAuthenticated: false });
   };
 
   const checkAccess = (): boolean => {
-    if (!authState.user) return false;
-    const now = new Date();
-    const accessEnd = new Date(authState.user.accessEnd);
-    return authState.user.isActive && now <= accessEnd;
+    return !!authState.user && authState.isAuthenticated;
   };
 
   return (
-    <AuthContext.Provider value={{ ...authState, login, logout, checkAccess }}>
+    <AuthContext.Provider value={{ 
+      ...authState, 
+      login, 
+      logout, 
+      checkAccess, 
+      isLoading 
+    }}>
       {children}
     </AuthContext.Provider>
   );

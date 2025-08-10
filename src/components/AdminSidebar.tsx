@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Video, 
-  Users, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Video,
+  Users,
+  BarChart3,
   Plus,
   Eye,
-  X
+  X,
+  Tag
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -22,6 +23,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
     { path: '/admin/videos', icon: Video, label: 'Video Management' },
     { path: '/admin/videos/new', icon: Plus, label: 'Add Video' },
+    { path: '/admin/categories', icon: Tag, label: 'Categories' },
     { path: '/admin/users', icon: Users, label: 'User Management' },
     { path: '/admin/progress', icon: BarChart3, label: 'User Progress' },
     { path: '/admin/preview', icon: Eye, label: 'Preview Portal' },
@@ -38,12 +40,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
     <>
       {/* Mobile overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
       <div className={`
         w-64 bg-white shadow-lg border-r border-gray-200 h-screen fixed left-0 top-16 z-50
