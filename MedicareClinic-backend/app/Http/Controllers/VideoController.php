@@ -23,6 +23,9 @@ class VideoController extends Controller
                     'title' => $video->title,
                     'description' => $video->description,
                     'video_path' => $video->video_path,
+                    'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
+                    'cover_image' => $video->cover_image,
+                    'cover_url' => $video->cover_image ? Storage::url($video->cover_image) : null,
                     'is_published' => $video->is_published,
                     'category' => $video->category ? [
                         'id' => $video->category->id,
@@ -51,10 +54,15 @@ class VideoController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // Increase memory limit and execution time for large uploads
+        ini_set('memory_limit', '1024M');
+        ini_set('max_execution_time', 600); // 10 minutes
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'video_path' => 'required|string',
+            'video_file' => 'required|file|mimes:mp4,avi,mov,wmv,webm|max:512000', // 500MB
+            'cover_image' => 'required|file|mimes:jpeg,jpg,png,webp|max:10240', // 10MB
             'category_id' => 'required|exists:categories,id',
             'is_published' => 'boolean',
         ]);
@@ -68,12 +76,21 @@ class VideoController extends Controller
         }
 
         try {
+            // Upload video file
+            $videoFile = $request->file('video_file');
+            $videoPath = $videoFile->store('videos', 'public');
+
+            // Upload cover image
+            $coverFile = $request->file('cover_image');
+            $coverPath = $coverFile->store('covers', 'public');
+
             $video = Video::create([
                 'title' => $request->title,
                 'description' => $request->description,
-                'video_path' => $request->video_path,
+                'video_path' => $videoPath,
+                'cover_image' => $coverPath,
                 'category_id' => $request->category_id,
-                'is_published' => $request->is_published ?? false,
+                'is_published' => $request->boolean('is_published', false),
             ]);
 
             $video->load('category');
@@ -81,7 +98,22 @@ class VideoController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Video created successfully',
-                'data' => $video
+                'data' => [
+                    'id' => $video->id,
+                    'title' => $video->title,
+                    'description' => $video->description,
+                    'video_path' => $video->video_path,
+                    'video_url' => Storage::url($video->video_path),
+                    'cover_image' => $video->cover_image,
+                    'cover_url' => Storage::url($video->cover_image),
+                    'is_published' => $video->is_published,
+                    'category' => $video->category ? [
+                        'id' => $video->category->id,
+                        'name' => $video->category->name,
+                    ] : null,
+                    'created_at' => $video->created_at,
+                    'updated_at' => $video->updated_at,
+                ]
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -107,6 +139,9 @@ class VideoController extends Controller
                     'title' => $video->title,
                     'description' => $video->description,
                     'video_path' => $video->video_path,
+                    'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
+                    'cover_image' => $video->cover_image,
+                    'cover_url' => $video->cover_image ? Storage::url($video->cover_image) : null,
                     'is_published' => $video->is_published,
                     'category' => $video->category ? [
                         'id' => $video->category->id,
@@ -161,7 +196,22 @@ class VideoController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Video updated successfully',
-                'data' => $video
+                'data' => [
+                    'id' => $video->id,
+                    'title' => $video->title,
+                    'description' => $video->description,
+                    'video_path' => $video->video_path,
+                    'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
+                    'cover_image' => $video->cover_image,
+                    'cover_url' => $video->cover_image ? Storage::url($video->cover_image) : null,
+                    'is_published' => $video->is_published,
+                    'category' => $video->category ? [
+                        'id' => $video->category->id,
+                        'name' => $video->category->name,
+                    ] : null,
+                    'created_at' => $video->created_at,
+                    'updated_at' => $video->updated_at,
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -178,9 +228,14 @@ class VideoController extends Controller
     public function destroy(Video $video): JsonResponse
     {
         try {
-            // Optionally delete the video file from storage
-            if ($video->video_path && Storage::exists($video->video_path)) {
-                Storage::delete($video->video_path);
+            // Delete the video file from storage
+            if ($video->video_path && Storage::disk('public')->exists($video->video_path)) {
+                Storage::disk('public')->delete($video->video_path);
+            }
+
+            // Delete the cover image from storage
+            if ($video->cover_image && Storage::disk('public')->exists($video->cover_image)) {
+                Storage::disk('public')->delete($video->cover_image);
             }
 
             $video->delete();
@@ -211,7 +266,22 @@ class VideoController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $video->is_published ? 'Video published successfully' : 'Video unpublished successfully',
-                'data' => $video
+                'data' => [
+                    'id' => $video->id,
+                    'title' => $video->title,
+                    'description' => $video->description,
+                    'video_path' => $video->video_path,
+                    'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
+                    'cover_image' => $video->cover_image,
+                    'cover_url' => $video->cover_image ? Storage::url($video->cover_image) : null,
+                    'is_published' => $video->is_published,
+                    'category' => $video->category ? [
+                        'id' => $video->category->id,
+                        'name' => $video->category->name,
+                    ] : null,
+                    'created_at' => $video->created_at,
+                    'updated_at' => $video->updated_at,
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -230,7 +300,25 @@ class VideoController extends Controller
         try {
             $videos = $category->videos()
                 ->where('is_published', true)
-                ->get();
+                ->get()
+                ->map(function ($video) {
+                    return [
+                        'id' => $video->id,
+                        'title' => $video->title,
+                        'description' => $video->description,
+                        'video_path' => $video->video_path,
+                        'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
+                        'cover_image' => $video->cover_image,
+                        'cover_url' => $video->cover_image ? Storage::url($video->cover_image) : null,
+                        'is_published' => $video->is_published,
+                        'category' => [
+                            'id' => $video->category->id,
+                            'name' => $video->category->name,
+                        ],
+                        'created_at' => $video->created_at,
+                        'updated_at' => $video->updated_at,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -268,7 +356,25 @@ class VideoController extends Controller
             $videos = Video::with('category')
                 ->whereIn('category_id', $categoryIds)
                 ->where('is_published', true)
-                ->get();
+                ->get()
+                ->map(function ($video) {
+                    return [
+                        'id' => $video->id,
+                        'title' => $video->title,
+                        'description' => $video->description,
+                        'video_path' => $video->video_path,
+                        'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
+                        'cover_image' => $video->cover_image,
+                        'cover_url' => $video->cover_image ? Storage::url($video->cover_image) : null,
+                        'is_published' => $video->is_published,
+                        'category' => $video->category ? [
+                            'id' => $video->category->id,
+                            'name' => $video->category->name,
+                        ] : null,
+                        'created_at' => $video->created_at,
+                        'updated_at' => $video->updated_at,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -313,6 +419,29 @@ class VideoController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all categories for select dropdown
+     */
+    public function getAllForSelect(): JsonResponse
+    {
+        try {
+            $categories = Category::select('id', 'name')
+                ->orderBy('name')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $categories
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch categories',
                 'error' => $e->getMessage()
             ], 500);
         }
