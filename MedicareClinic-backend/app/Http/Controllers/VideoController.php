@@ -57,12 +57,31 @@ class VideoController extends Controller
         // Increase memory limit and execution time for large uploads
         ini_set('memory_limit', '1024M');
         ini_set('max_execution_time', 600); // 10 minutes
+        ini_set('upload_max_filesize', '512M');
+        ini_set('post_max_size', '512M');
+
+        // Check if file was uploaded successfully
+        if (!$request->hasFile('video_file') || !$request->file('video_file')->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Video file upload failed or file is too large',
+                'error' => 'File upload error - check file size limits'
+            ], 422);
+        }
+
+        if (!$request->hasFile('cover_image') || !$request->file('cover_image')->isValid()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cover image upload failed or file is too large',
+                'error' => 'File upload error - check file size limits'
+            ], 422);
+        }
 
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'video_file' => 'required|file|mimes:mp4,avi,mov,wmv,webm|max:512000', // 500MB
-            'cover_image' => 'required|file|mimes:jpeg,jpg,png,webp|max:10240', // 10MB
+            'video_file' => 'required|file|mimes:mp4,avi,mov,wmv,webm|max:512000', // 500MB in KB
+            'cover_image' => 'required|file|mimes:jpeg,jpg,png,webp|max:10240', // 10MB in KB
             'category_id' => 'required|exists:categories,id',
             'is_published' => 'boolean',
         ]);
