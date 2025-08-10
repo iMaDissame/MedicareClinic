@@ -537,8 +537,8 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center mt-6">
-              <img 
-                src="src/public/aa.png" 
+             <img 
+                src={`${import.meta.env.BASE_URL}aa.png`} 
                 alt="Logo Medicare Clinic" 
                 className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2" 
               />
