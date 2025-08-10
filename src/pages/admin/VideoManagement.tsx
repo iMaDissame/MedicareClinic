@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Video, Edit, Trash2, Eye, EyeOff, Plus, Calendar, AlertCircle } from 'lucide-react';
+import { Video, Edit, Trash2, Eye, EyeOff, Plus, Calendar, AlertCircle, Play, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import axiosClient from '../../services/axiosClient';
@@ -33,6 +33,64 @@ interface ConfirmModalProps {
   confirmText?: string;
   isDestructive?: boolean;
 }
+
+interface VideoPlayerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  video: VideoData | null;
+}
+
+const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ isOpen, onClose, video }) => {
+  if (!isOpen || !video) return null;
+
+  const getVideoUrl = () => {
+    if (video.video_url) {
+      return video.video_url;
+    }
+    
+    if (video.video_path) {
+      // Use the Laravel backend URL + storage path
+      // The API should return the path like "videos/filename.mp4"
+      const fullUrl = `http://127.0.0.1:8000/storage/${video.video_path}`;
+      console.log('Constructed video URL:', fullUrl, 'from path:', video.video_path);
+      return fullUrl;
+    }
+    
+    return '';
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h3 className="text-lg font-semibold text-gray-900">{video.title}</h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-4">
+          <video
+            controls
+            className="w-full max-h-[60vh]"
+            src={getVideoUrl()}
+            poster={video.cover_url}
+          >
+            Your browser does not support the video tag.
+          </video>
+          {video.description && (
+            <div className="mt-4">
+              <h4 className="font-medium text-gray-900 mb-2">Description</h4>
+              <p className="text-gray-600 text-sm">{video.description}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({ 
   isOpen, 
@@ -88,6 +146,13 @@ const VideoManagement: React.FC = () => {
     action: null,
     videoId: null,
     videoTitle: ''
+  });
+  const [videoPlayerModal, setVideoPlayerModal] = useState<{
+    isOpen: boolean;
+    video: VideoData | null;
+  }>({
+    isOpen: false,
+    video: null
   });
 
   useEffect(() => {
@@ -173,6 +238,20 @@ const VideoManagement: React.FC = () => {
       action,
       videoId,
       videoTitle
+    });
+  };
+
+  const openVideoPlayer = (video: VideoData) => {
+    setVideoPlayerModal({
+      isOpen: true,
+      video
+    });
+  };
+
+  const closeVideoPlayer = () => {
+    setVideoPlayerModal({
+      isOpen: false,
+      video: null
     });
   };
 
@@ -378,6 +457,7 @@ const VideoManagement: React.FC = () => {
               onDelete={(videoId, videoTitle) => 
                 openConfirmModal('delete', videoId, videoTitle)
               }
+              onPlay={(video) => openVideoPlayer(video)}
             />
           ))}
           {publishedVideos.length === 0 && (
@@ -408,6 +488,7 @@ const VideoManagement: React.FC = () => {
               onDelete={(videoId, videoTitle) => 
                 openConfirmModal('delete', videoId, videoTitle)
               }
+              onPlay={(video) => openVideoPlayer(video)}
             />
           ))}
           {unpublishedVideos.length === 0 && (
@@ -445,6 +526,12 @@ const VideoManagement: React.FC = () => {
         onConfirm={handleConfirmAction}
         {...getConfirmModalProps()}
       />
+
+      <VideoPlayerModal
+        isOpen={videoPlayerModal.isOpen}
+        onClose={closeVideoPlayer}
+        video={videoPlayerModal.video}
+      />
     </div>
   );
 };
@@ -453,9 +540,10 @@ interface VideoCardProps {
   video: VideoData;
   onTogglePublish: (videoId: number, videoTitle: string) => void;
   onDelete: (videoId: number, videoTitle: string) => void;
+  onPlay: (video: VideoData) => void;
 }
 
-const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete }) => {
+const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete, onPlay }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -470,10 +558,12 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete 
       return video.cover_url;
     }
     
-    // If we have a cover_image path, construct the URL
+    // If we have a cover_image path, construct the URL for Laravel storage
     if (video.cover_image) {
-      const baseStorageUrl = import.meta.env.VITE_STORAGE_URL || '/storage';
-      return `${baseStorageUrl}/${video.cover_image}`;
+      // Use the Laravel backend URL + storage path
+      // Remove 'covers/' from the path if it's already included
+      const cleanPath = video.cover_image.startsWith('covers/') ? video.cover_image : `covers/${video.cover_image}`;
+      return `http://127.0.0.1:8000/storage/${cleanPath}`;
     }
     
     // Return placeholder image if no cover image
@@ -482,7 +572,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete 
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
-      <div className="relative">
+      <div className="relative group">
         <img
           src={getCoverImageUrl()}
           alt={video.title}
@@ -492,6 +582,18 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete 
             (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"%3E%3Crect width="400" height="200" fill="%23f3f4f6"/%3E%3Ctext x="200" y="100" text-anchor="middle" dy="0.3em" font-family="Arial, sans-serif" font-size="16" fill="%236b7280"%3ENo Image%3C/text%3E%3C/svg%3E';
           }}
         />
+        
+        {/* Play button overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+          <button
+            onClick={() => onPlay(video)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 transform hover:scale-110 transition-transform"
+            title="Play video"
+          >
+            <Play className="h-6 w-6 text-gray-700 ml-1" />
+          </button>
+        </div>
+        
         <div className="absolute top-2 right-2">
           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
             video.is_published 
