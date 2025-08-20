@@ -18,6 +18,7 @@ class UserManagementController extends Controller
     {
         try {
             $query = User::query();
+            $query = User::with('categories');
 
             // Filter by status if provided
             if ($request->has('status')) {
@@ -64,6 +65,12 @@ class UserManagementController extends Controller
                     'access_status' => $user->access_status,
                     'days_remaining' => $user->days_remaining,
                     'has_valid_access' => $user->hasValidAccess(),
+                     'categories' => $user->categories->map(function ($category) {
+                    return [
+                        'id' => $category->id,
+                        'name' => $category->name
+                    ];
+                }),
                     'created_at' => $user->created_at->toISOString(),
                     'updated_at' => $user->updated_at->toISOString(),
                 ];
@@ -331,4 +338,45 @@ class UserManagementController extends Controller
             return response()->json(['error' => 'Failed to extend access'], 500);
         }
     }
+
+    /**
+ * Assign categories to a user
+ */
+public function assignCategories(Request $request, User $user)
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            'category_ids' => 'required|array',
+            'category_ids.*' => 'exists:categories,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'details' => $validator->errors()
+            ], 422);
+        }
+
+        // Sync the categories for this user
+        $user->categories()->sync($request->category_ids);
+
+        Log::info('Categories assigned to user successfully', [
+            'user_id' => $user->id,
+            'category_ids' => $request->category_ids
+        ]);
+
+        return response()->json([
+            'message' => 'Categories assigned to user successfully',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'assigned_categories' => $user->categories->pluck('name')
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error assigning categories to user: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to assign categories to user'], 500);
+    }
+}
 }

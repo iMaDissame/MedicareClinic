@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Plus, Edit, Trash2, UserCheck, UserX, Calendar, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Users, Plus, Edit, Trash2, UserCheck, UserX, Calendar, AlertCircle, Search, ChevronDown, Tags } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
@@ -17,8 +17,14 @@ interface User {
   access_status: 'active' | 'inactive' | 'expired' | 'expiring_soon';
   days_remaining: number | null;
   has_valid_access: boolean;
+  categories?: Category[];
   created_at: string;
   updated_at: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
 }
 
 interface Statistics {
@@ -37,14 +43,148 @@ interface FormData {
   access_start: string;
   access_end: string;
   is_active: boolean;
+  category_ids: number[];
 }
+
+interface CategoryAssignmentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  user: User | null;
+  categories: Category[];
+  onSave: (userId: string, categoryIds: number[]) => void;
+  loading: boolean;
+}
+
+const CategoryAssignmentModal: React.FC<CategoryAssignmentModalProps> = ({
+  isOpen,
+  onClose,
+  user,
+  categories,
+  onSave,
+  loading
+}) => {
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+  if (user && user.categories) {
+    setSelectedCategoryIds(user.categories.map(cat => cat.id));
+  }
+}, [user]);
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleCategoryToggle = (categoryId: number) => {
+    setSelectedCategoryIds(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  const handleSave = () => {
+    if (user) {
+      onSave(user.id, selectedCategoryIds);
+    }
+  };
+
+  if (!isOpen || !user) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-hidden">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Assign Categories to {user.username}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <AlertCircle className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Search categories..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="max-h-64 overflow-y-auto mb-6">
+          {filteredCategories.length > 0 ? (
+            <div className="space-y-2">
+              {filteredCategories.map((category) => (
+                <div
+                  key={category.id}
+                  className="flex items-center p-3 border border-gray-200 rounded hover:bg-gray-50"
+                >
+                  <input
+                    type="checkbox"
+                    id={`category-${category.id}`}
+                    checked={selectedCategoryIds.includes(category.id)}
+                    onChange={() => handleCategoryToggle(category.id)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor={`category-${category.id}`}
+                    className="ml-3 text-sm font-medium text-gray-700 cursor-pointer"
+                  >
+                    {category.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No categories found
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-600">
+            {selectedCategoryIds.length} categories selected
+          </p>
+          <div className="flex space-x-3">
+            <Button
+              variant="secondary"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Save Categories'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedUserForCategories, setSelectedUserForCategories] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [categoryLoading, setCategoryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -55,13 +195,32 @@ const UserManagement: React.FC = () => {
     password: '',
     access_start: '',
     access_end: '',
-    is_active: true
+    is_active: true,
+    category_ids: []
   });
+
+  // Dropdown states for categories in form
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadUsers();
     loadStatistics();
+    loadCategories();
   }, [searchTerm, statusFilter]);
+
+  useEffect(() => {
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const loadUsers = async () => {
     try {
@@ -82,6 +241,19 @@ const UserManagement: React.FC = () => {
     }
   };
 
+const loadCategories = async () => {
+  try {
+    const response = await axiosClient.get('/admin/categories/select-options');
+    if (response.data.success) {
+      setCategories(response.data.data);
+    }
+  } catch (err: any) {
+    console.error('Error loading categories:', err);
+    // Optional: set a more specific error message
+    setError('Failed to load categories. Please check if the admin API is running.');
+  }
+};
+
   const loadStatistics = async () => {
     try {
       const response = await axiosClient.get('/admin/users/statistics');
@@ -98,17 +270,18 @@ const UserManagement: React.FC = () => {
       setLoading(true);
       setError(null);
 
+      const submitData = { ...formData };
+
       if (editingUser) {
         // Update existing user
-        const updateData = { ...formData };
-        if (!updateData.password) {
-          delete updateData.password; // Don't send empty password
+        if (!submitData.password) {
+          delete submitData.password; // Don't send empty password
         }
         
-        await axiosClient.put(`/admin/users/${editingUser.id}`, updateData);
+        await axiosClient.put(`/admin/users/${editingUser.id}`, submitData);
       } else {
         // Create new user
-        await axiosClient.post('/admin/users', formData);
+        await axiosClient.post('/admin/users', submitData);
       }
 
       await loadUsers();
@@ -130,11 +303,13 @@ const UserManagement: React.FC = () => {
       password: '',
       access_start: '',
       access_end: '',
-      is_active: true
+      is_active: true,
+      category_ids: []
     });
     setShowAddForm(false);
     setEditingUser(null);
     setError(null);
+    setCategorySearch('');
   };
 
   const handleEdit = (user: User) => {
@@ -146,7 +321,8 @@ const UserManagement: React.FC = () => {
       password: '', // Don't populate password for security
       access_start: user.access_start,
       access_end: user.access_end,
-      is_active: user.is_active
+      is_active: user.is_active,
+      category_ids: user.categories ? user.categories.map(cat => cat.id) : []
     });
     setShowAddForm(true);
   };
@@ -207,6 +383,37 @@ const UserManagement: React.FC = () => {
     }));
   };
 
+  const handleCategoryAssignment = (user: User) => {
+    setSelectedUserForCategories(user);
+    setShowCategoryModal(true);
+  };
+
+  const handleSaveCategoryAssignment = async (userId: string, categoryIds: number[]) => {
+    try {
+      setCategoryLoading(true);
+      await axiosClient.post(`/admin/users/${userId}/assign-categories`, {
+        category_ids: categoryIds
+      });
+      await loadUsers();
+      setShowCategoryModal(false);
+      setSelectedUserForCategories(null);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to assign categories');
+      console.error('Error assigning categories:', err);
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
+  const toggleCategoryInForm = (categoryId: number) => {
+    setFormData(prev => ({
+      ...prev,
+      category_ids: prev.category_ids.includes(categoryId)
+        ? prev.category_ids.filter(id => id !== categoryId)
+        : [...prev.category_ids, categoryId]
+    }));
+  };
+
   const getAccessStatusDisplay = (user: User) => {
     const statusMap = {
       active: { status: 'Active', color: 'text-green-600', bg: 'bg-green-100' },
@@ -221,6 +428,10 @@ const UserManagement: React.FC = () => {
     
     return statusMap[user.access_status] || statusMap.inactive;
   };
+
+  const filteredCategoriesForForm = categories.filter(category =>
+    category.name.toLowerCase().includes(categorySearch.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -425,6 +636,93 @@ const UserManagement: React.FC = () => {
               />
             </div>
 
+            {/* Categories Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assign Categories
+              </label>
+              <div className="relative" ref={dropdownRef}>
+                <div
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer flex items-center justify-between min-h-[40px]"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                >
+                  <span className={formData.category_ids.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
+                    {formData.category_ids.length > 0
+                      ? `${formData.category_ids.length} categories selected`
+                      : 'Select categories'
+                    }
+                  </span>
+                  <ChevronDown className={`h-4 w-4 text-gray-400 transform transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+
+                {isDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                    <div className="p-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Search categories..."
+                          value={categorySearch}
+                          onChange={(e) => setCategorySearch(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {filteredCategoriesForForm.length > 0 ? (
+                        filteredCategoriesForForm.map((category) => (
+                          <div
+                            key={category.id}
+                            className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleCategoryInForm(category.id);
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.category_ids.includes(category.id)}
+                              onChange={() => toggleCategoryInForm(category.id)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-3"
+                            />
+                            <span className="text-sm">{category.name}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-gray-500 text-sm">
+                          No categories found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {formData.category_ids.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {formData.category_ids.map(categoryId => {
+                    const category = categories.find(cat => cat.id === categoryId);
+                    return category ? (
+                      <span
+                        key={categoryId}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                      >
+                        {category.name}
+                        <button
+                          type="button"
+                          className="ml-1 inline-flex items-center justify-center w-4 h-4 text-blue-400 hover:text-blue-600"
+                          onClick={() => toggleCategoryInForm(categoryId)}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ) : null;
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -498,6 +796,21 @@ const UserManagement: React.FC = () => {
                         <div className="text-sm font-medium text-gray-900">{user.username}</div>
                         <div className="text-xs text-gray-500">{user.name}</div>
                         <div className="text-xs text-gray-500">{user.email}</div>
+                        {user.categories && user.categories.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {user.categories.slice(0, 2).map((category) => (
+                              <span
+                                key={category.id}
+                                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                              >
+                                {category.name}
+                              </span>
+                            ))}
+                            {user.categories.length > 2 && (
+                              <span className="text-xs text-gray-500">+{user.categories.length - 2} more</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${accessStatus.bg} ${accessStatus.color}`}>
@@ -520,6 +833,15 @@ const UserManagement: React.FC = () => {
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleCategoryAssignment(user)}
+                      disabled={loading}
+                    >
+                      <Tags className="h-3 w-3 mr-1" />
+                      Categories
                     </Button>
                     <Button
                       size="sm"
@@ -569,6 +891,9 @@ const UserManagement: React.FC = () => {
                     Contact
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Categories
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Access Period
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -600,6 +925,29 @@ const UserManagement: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {user.email || 'No email'}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {user.categories && user.categories.length > 0 ? (
+                            <>
+                              {user.categories.slice(0, 2).map((category) => (
+                                <span
+                                  key={category.id}
+                                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                >
+                                  {category.name}
+                                </span>
+                              ))}
+                              {user.categories.length > 2 && (
+                                <span className="text-xs text-gray-500">
+                                  +{user.categories.length - 2} more
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-xs text-gray-500">No categories assigned</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
                           <div>Start: {new Date(user.access_start).toLocaleDateString()}</div>
@@ -618,14 +966,25 @@ const UserManagement: React.FC = () => {
                             variant="ghost"
                             onClick={() => handleEdit(user)}
                             disabled={loading}
+                            title="Edit user"
                           >
                             <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleCategoryAssignment(user)}
+                            disabled={loading}
+                            title="Manage categories"
+                          >
+                            <Tags className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant={user.is_active ? 'secondary' : 'primary'}
                             onClick={() => toggleUserStatus(user.id)}
                             disabled={loading}
+                            title={user.is_active ? 'Disable user' : 'Enable user'}
                           >
                             {user.is_active ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
                           </Button>
@@ -645,6 +1004,7 @@ const UserManagement: React.FC = () => {
                             variant="danger"
                             onClick={() => handleDelete(user.id)}
                             disabled={loading}
+                            title="Delete user"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -658,6 +1018,19 @@ const UserManagement: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* Category Assignment Modal */}
+      <CategoryAssignmentModal
+        isOpen={showCategoryModal}
+        onClose={() => {
+          setShowCategoryModal(false);
+          setSelectedUserForCategories(null);
+        }}
+        user={selectedUserForCategories}
+        categories={categories}
+        onSave={handleSaveCategoryAssignment}
+        loading={categoryLoading}
+      />
     </div>
   );
 };

@@ -72,6 +72,14 @@ class User extends Authenticatable implements JWTSubject
         return 'student';
     }
 
+    // Relationships
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class, 'category_user', 'user_id', 'category_id')
+            ->withTimestamps();
+    }
+
     // Access control methods
     public function hasValidAccess()
     {
@@ -131,8 +139,8 @@ class User extends Authenticatable implements JWTSubject
     {
         $now = Carbon::now();
         return $query->active()
-                    ->where('access_start', '<=', $now)
-                    ->where('access_end', '>=', $now);
+            ->where('access_start', '<=', $now)
+            ->where('access_end', '>=', $now);
     }
 
     public function scopeExpiringSoon($query, $days = 7)
@@ -141,13 +149,53 @@ class User extends Authenticatable implements JWTSubject
         $threshold = $now->copy()->addDays($days);
 
         return $query->active()
-                    ->where('access_end', '>=', $now)
-                    ->where('access_end', '<=', $threshold);
+            ->where('access_end', '>=', $now)
+            ->where('access_end', '<=', $threshold);
     }
 
     public function scopeExpired($query)
     {
         $now = Carbon::now();
         return $query->where('access_end', '<', $now);
+    }
+
+    /**
+     * Get videos that belong to categories assigned to this user
+     */
+    public function getAssignedVideos()
+    {
+        $categoryIds = $this->categories->pluck('id')->toArray();
+
+        if (empty($categoryIds)) {
+            return collect();
+        }
+
+        return Video::whereIn('category_id', $categoryIds)
+            ->where('is_published', true)
+            ->get();
+    }
+
+    /**
+     * Check if user has access to a specific category
+     */
+    public function hasAccessToCategory($categoryId)
+    {
+        return $this->categories->contains('id', $categoryId);
+    }
+
+    /**
+     * Check if user has access to a specific video (through category assignment)
+     */
+    public function hasAccessToVideo($video)
+    {
+        if (is_object($video)) {
+            $categoryId = $video->category_id;
+        } else {
+            // Assuming $video is a video ID, fetch the video
+            $videoModel = \App\Models\Video::find($video);
+            $categoryId = $videoModel ? $videoModel->category_id : null;
+        }
+
+        return $categoryId && $this->hasAccessToCategory($categoryId);
     }
 }

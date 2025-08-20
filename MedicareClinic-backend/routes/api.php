@@ -50,6 +50,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::delete('users/{user}', [UserManagementController::class, 'destroy']);
         Route::patch('users/{user}/toggle-status', [UserManagementController::class, 'toggleStatus']);
         Route::patch('users/{user}/extend-access', [UserManagementController::class, 'extendAccess']);
+        Route::post('users/{user}/assign-categories', [UserManagementController::class, 'assignCategories']);
 
         // Video Management Routes
         Route::get('videos/statistics', [VideoController::class, 'statistics']);
