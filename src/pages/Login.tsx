@@ -29,43 +29,56 @@ const Login: React.FC = () => {
     );
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsSubmitting(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setIsSubmitting(true);
 
-    try {
-      console.log('Attempting login...');
-      const success = await login(username, password);
+  console.group('🔐 Login Component - handleSubmit');
+  console.log('📝 Form submitted:', { username, passwordLength: password.length });
+
+  try {
+    console.log('🔄 Calling auth.login()...');
+    const success = await login(username, password);
+    
+    if (success) {
+      // Get auth type from storage
+      const authType = localStorage.getItem('authType');
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
       
-      if (success) {
-        // Get updated user info from storage
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        console.log('Login successful, user:', currentUser);
-        
-        // Determine redirect path
-        let redirectPath;
-        
-        if (from && from !== '/login') {
-          // Redirect to intended destination if it was provided
-          redirectPath = from;
-        } else {
-          // Default redirect based on role
-          redirectPath = currentUser.role === 'admin' ? '/admin' : '/app/dashboard';
-        }
-        
-        console.log('Redirecting to:', redirectPath);
-        navigate(redirectPath, { replace: true });
+      console.log('✅ Login successful:', { 
+        authType, 
+        user: currentUser,
+        from: from || 'none'
+      });
+      
+      // Determine redirect path based on auth type
+      let redirectPath;
+      
+      if (from && from !== '/login') {
+        redirectPath = from;
+        console.log('📍 Redirecting to intended destination:', redirectPath);
       } else {
-        setError('Invalid credentials or access expired');
+        redirectPath = authType === 'admin' ? '/admin' : '/app/dashboard';
+        console.log('📍 Redirecting to default path:', redirectPath);
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Login failed. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      
+      navigate(redirectPath, { replace: true });
+    } else {
+      console.warn('❌ Login failed - invalid credentials');
+      setError('Invalid credentials or access expired');
     }
-  };
+  } catch (err: any) {
+    console.error('💥 Login error:', {
+      message: err.message,
+      stack: err.stack
+    });
+    setError('Login failed. Please try again.');
+  } finally {
+    console.groupEnd();
+    setIsSubmitting(false);
+  }
+};
 
   // Only redirect if actually authenticated (not just loading)
   if (isAuthenticated && user) {

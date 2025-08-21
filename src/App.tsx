@@ -34,23 +34,23 @@ function App() {
           <Route path="/unauthorized" element={<Unauthorized />} />
 
           {/* Student/Client Routes - All under /app prefix */}
-          <Route 
-            path="/app" 
+          <Route
+            path="/app"
             element={
-              <ProtectedRoute requiredRole="users">
+              <ProtectedRoute requiredAuthType="user">
                 <Layout />
               </ProtectedRoute>
             }
           >
             {/* Default redirect to dashboard when accessing /app */}
             <Route index element={<Navigate to="dashboard" replace />} />
-            
+
             {/* Dashboard route */}
             <Route path="dashboard" element={<Dashboard />} />
-            
+
             {/* Course player route */}
             <Route path="course/:courseId" element={<CoursePlayer />} />
-            
+
             {/* Video watch page route */}
             <Route path="watch/:id" element={<VideoWatchPage />} />
           </Route>
@@ -59,7 +59,7 @@ function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute requiredRole="admin">
+              <ProtectedRoute requiredAuthType="admin"> 
                 <AdminLayout />
               </ProtectedRoute>
             }
@@ -67,20 +67,20 @@ function App() {
             {/* Default redirect to dashboard when accessing /admin */}
             <Route index element={<AdminDashboard />} />
             <Route path="dashboard" element={<AdminDashboard />} />
-            
+
             {/* Video Management Routes */}
             <Route path="videos" element={<VideoManagement />} />
             <Route path="videos/new" element={<AddVideo />} />
             <Route path="videos/edit/:courseId" element={<EditVideo />} />
-            
+
             {/* Video watch page route for admin preview */}
             <Route path="videos/watch/:id" element={<VideoWatchPage />} />
-            
+
             {/* Category Management Routes */}
             <Route path="categories" element={<CategoryManagement />} />
             <Route path="categories/edit/:categoryId" element={<EditCategory />} />
             <Route path="categories/assign/:categoryId" element={<AssignUsers />} />
-            
+
             {/* User Management Routes */}
             <Route path="users" element={<UserManagement />} />
             <Route path="progress" element={<UserProgress />} />
@@ -100,15 +100,15 @@ function App() {
                   The path "{window.location.pathname}" doesn't exist or you don't have access.
                 </p>
                 <div className="space-y-2">
-                  <a 
-                    href="/MedicareClinic/login" 
+                  <a
+                    href="/MedicareClinic/login"
                     className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
                   >
                     Go to Login
                   </a>
                   <br />
-                  <a 
-                    href="/MedicareClinic/" 
+                  <a
+                    href="/MedicareClinic/"
                     className="inline-block text-gray-600 hover:text-gray-800 transition"
                   >
                     Return to Home

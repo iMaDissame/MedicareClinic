@@ -4,24 +4,41 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'admin' | 'user';
+  requiredAuthType?: 'admin' | 'user';
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  const { isAuthenticated, user, checkAccess } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requiredAuthType 
+}) => {
+  const { isAuthenticated, authType, isLoading } = useAuth();
+
+  console.log('🔒 ProtectedRoute check:', {
+    isAuthenticated,
+    authType,
+    isLoading,
+    requiredAuthType
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
+    console.log('🔒 Redirecting to login - not authenticated');
     return <Navigate to="/login" replace />;
   }
 
-  if (!checkAccess()) {
-    return <Navigate to="/access-expired" replace />;
-  }
-
-  if (requiredRole && user?.role !== requiredRole) {
+  if (requiredAuthType && authType !== requiredAuthType) {
+    console.log(`🔒 Redirecting to unauthorized - expected ${requiredAuthType}, got ${authType}`);
     return <Navigate to="/unauthorized" replace />;
   }
 
+  console.log('🔒 Access granted');
   return <>{children}</>;
 };
 
