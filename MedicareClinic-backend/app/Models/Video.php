@@ -17,4 +17,9 @@ class Video extends Model
     {
         return $this->hasMany(Comment::class);
     }
+
+    public function userProgress()
+    {
+        return $this->hasMany(UserVideoProgress::class);
+    }
 }

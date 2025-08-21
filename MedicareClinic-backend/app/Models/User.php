@@ -80,6 +80,11 @@ class User extends Authenticatable implements JWTSubject
             ->withTimestamps();
     }
 
+    public function videoProgress()
+    {
+        return $this->hasMany(UserVideoProgress::class);
+    }
+
     // Access control methods
     public function hasValidAccess()
     {

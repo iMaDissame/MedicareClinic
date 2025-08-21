@@ -3,12 +3,13 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserManagementController;
-use App\Http\Controllers\CommentController;
 
 // User/Student Authentication Routes
 Route::group(['prefix' => 'auth'], function () {
@@ -41,6 +42,12 @@ Route::group(['prefix' => 'admin'], function () {
         // Dashboard stats
         Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
+
+        Route::prefix('progress')->group(function () {
+            Route::get('/statistics', [ProgressController::class, 'statistics']);
+            Route::get('/users', [ProgressController::class, 'getAllUsersProgress']);
+            Route::get('/users/{user}', [ProgressController::class, 'getUserProgress']);
+        });
         // User Management Routes
         Route::get('users/statistics', [UserManagementController::class, 'statistics']);
         Route::get('users', [UserManagementController::class, 'index']);
@@ -89,4 +96,5 @@ Route::middleware(['auth:api,admin'])->group(function () {
     Route::patch('comments/{comment}/approve', [CommentController::class, 'approve']);
     Route::patch('comments/{comment}/reject', [CommentController::class, 'reject']);
     Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
+    Route::post('/progress', [ProgressController::class, 'store']);
 });

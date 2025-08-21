@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, MessageCircle, Trash2, Check, X, User, Calendar, Shield, CheckCircle } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import axiosClient from '../services/axiosClient';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Category {
   id: number;
@@ -14,6 +15,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  username?: string;
   role?: string;
 }
 
@@ -86,12 +88,15 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, message, type = '
 const VideoWatchPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [video, setVideo] = useState<VideoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
   
   // Modal State
   const [modal, setModal] = useState<{
@@ -111,7 +116,32 @@ const VideoWatchPage: React.FC = () => {
       fetchVideo(parseInt(id));
     }
     fetchCurrentUser();
-  }, [id]);
+  }, [id, authUser]);
+
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement || !currentUser || !video) return;
+
+    const updateProgress = () => {
+      if (videoElement.duration) {
+        const progress = (videoElement.currentTime / videoElement.duration) * 100;
+        setVideoProgress(progress);
+        saveProgress(video.id, progress);
+      }
+    };
+
+    const handleVideoEnd = () => {
+      saveProgress(video.id, 100);
+    };
+
+    videoElement.addEventListener('timeupdate', updateProgress);
+    videoElement.addEventListener('ended', handleVideoEnd);
+
+    return () => {
+      videoElement.removeEventListener('timeupdate', updateProgress);
+      videoElement.removeEventListener('ended', handleVideoEnd);
+    };
+  }, [video, currentUser]);
 
   const showModal = (title: string, message: string, type: 'success' | 'error' = 'success') => {
     setModal({
@@ -132,15 +162,20 @@ const VideoWatchPage: React.FC = () => {
   };
 
   const fetchCurrentUser = () => {
-    // Check for both admin and regular user data
     const adminData = localStorage.getItem('currentAdmin');
     const userData = localStorage.getItem('currentUser');
     
     if (adminData) {
       const admin = JSON.parse(adminData);
       setCurrentUser({ ...admin, role: 'admin' });
-    } else if (userData) {
-      setCurrentUser(JSON.parse(userData));
+    } else if (authUser) {
+      setCurrentUser({ 
+        id: authUser.id,
+        name: authUser.name || authUser.username,
+        email: authUser.email,
+        username: authUser.username,
+        role: 'student'
+      });
     }
   };
 
@@ -161,6 +196,25 @@ const VideoWatchPage: React.FC = () => {
       setError(error.response?.data?.message || error.message || 'Failed to fetch video');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveProgress = async (videoId: number, progress: number) => {
+    try {
+      if (!currentUser) return;
+
+      // Save locally
+      const progressKey = `progress_${currentUser.id}_${videoId}`;
+      localStorage.setItem(progressKey, progress.toString());
+      
+      // Save to backend
+      await axiosClient.post('/progress', {
+        video_id: videoId,
+        progress: progress,
+        user_id: currentUser.id
+      });
+    } catch (error) {
+      console.error('Failed to save progress:', error);
     }
   };
 
@@ -205,77 +259,22 @@ const VideoWatchPage: React.FC = () => {
       });
       
       if (response.data && response.data.success) {
-        // Refresh the video data to get updated comments
         await fetchVideo(video.id);
         setNewComment('');
         
-        // Show success modal based on user role
         if (currentUser.role === 'admin') {
-          showModal(
-            'Comment Added',
-            'Your comment has been added successfully and is now visible to all users.',
-            'success'
-          );
+          showModal('Comment Added', 'Your comment has been added successfully and is now visible to all users.', 'success');
         } else {
-          showModal(
-            'Comment Submitted',
-            'Your comment has been submitted successfully! It will appear after admin approval.',
-            'success'
-          );
+          showModal('Comment Submitted', 'Your comment has been submitted successfully! It will appear after admin approval.', 'success');
         }
       } else {
-        showModal(
-          'Error',
-          response.data?.message || 'Failed to add comment',
-          'error'
-        );
+        showModal('Error', response.data?.message || 'Failed to add comment', 'error');
       }
     } catch (error: any) {
       console.error('Failed to add comment:', error);
-      showModal(
-        'Error',
-        error.response?.data?.message || 'Failed to add comment',
-        'error'
-      );
+      showModal('Error', error.response?.data?.message || 'Failed to add comment', 'error');
     } finally {
       setSubmittingComment(false);
-    }
-  };
-
-  const handleApproveComment = async (commentId: number) => {
-    try {
-      const response = await axiosClient.patch(`/comments/${commentId}/approve`);
-      
-      if (response.data && response.data.success) {
-        // Update the comment's approval status
-        setVideo(prev => prev ? {
-          ...prev,
-          comments: prev.comments.map(comment =>
-            comment.id === commentId
-              ? { ...comment, is_approved: true }
-              : comment
-          )
-        } : null);
-        
-        showModal(
-          'Comment Approved',
-          'The comment has been approved successfully and is now visible to all users.',
-          'success'
-        );
-      } else {
-        showModal(
-          'Error',
-          response.data?.message || 'Failed to approve comment',
-          'error'
-        );
-      }
-    } catch (error: any) {
-      console.error('Failed to approve comment:', error);
-      showModal(
-        'Error',
-        error.response?.data?.message || 'Failed to approve comment',
-        'error'
-      );
     }
   };
 
@@ -288,31 +287,18 @@ const VideoWatchPage: React.FC = () => {
       const response = await axiosClient.delete(`/comments/${commentId}`);
       
       if (response.data && response.data.success) {
-        // Remove the comment from the list
         setVideo(prev => prev ? {
           ...prev,
           comments: prev.comments.filter(comment => comment.id !== commentId)
         } : null);
         
-        showModal(
-          'Comment Deleted',
-          'The comment has been deleted successfully and removed from the video.',
-          'success'
-        );
+        showModal('Comment Deleted', 'The comment has been deleted successfully and removed from the video.', 'success');
       } else {
-        showModal(
-          'Error',
-          response.data?.message || 'Failed to delete comment',
-          'error'
-        );
+        showModal('Error', response.data?.message || 'Failed to delete comment', 'error');
       }
     } catch (error: any) {
       console.error('Failed to delete comment:', error);
-      showModal(
-        'Error',
-        error.response?.data?.message || 'Failed to delete comment',
-        'error'
-      );
+      showModal('Error', error.response?.data?.message || 'Failed to delete comment', 'error');
     }
   };
 
@@ -330,18 +316,15 @@ const VideoWatchPage: React.FC = () => {
     if (!video || !video.comments) return [];
     
     if (currentUser?.role === 'admin') {
-      // Admins can see all comments
       return video.comments;
     } else {
-      // Regular users can only see approved comments and their own comments
       return video.comments.filter(comment => 
-        comment.is_approved || comment.user_id === currentUser?.id
+        comment.is_approved || (currentUser && comment.user_id === currentUser.id)
       );
     }
   };
 
   const getCommentAuthor = (comment: Comment) => {
-    // Handle both admin and user comments with null safety
     if (comment.admin_id && comment.admin) {
       return {
         name: comment.admin.name || 'Admin',
@@ -349,8 +332,8 @@ const VideoWatchPage: React.FC = () => {
       };
     } else if (comment.user_id && comment.user) {
       return {
-        name: comment.user.name || 'User',
-        role: comment.user.role || 'user'
+        name: comment.user.name || comment.user.username || 'User',
+        role: 'student'
       };
     } else {
       return {
@@ -358,6 +341,12 @@ const VideoWatchPage: React.FC = () => {
         role: 'user'
       };
     }
+  };
+
+  const canDeleteComment = (comment: Comment) => {
+    if (currentUser?.role === 'admin') return true;
+    if (currentUser && comment.user_id === currentUser.id) return true;
+    return false;
   };
 
   if (loading) {
@@ -400,7 +389,6 @@ const VideoWatchPage: React.FC = () => {
   return (
     <>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Back Button */}
         <Button 
           onClick={() => navigate(-1)} 
           variant="secondary" 
@@ -410,9 +398,10 @@ const VideoWatchPage: React.FC = () => {
           Back
         </Button>
 
-        {/* Video Player Section - Full Width */}
+        {/* Video Player Section */}
         <Card className="overflow-hidden mb-8">
           <video
+            ref={videoRef}
             controls
             className="w-full aspect-video"
             src={getVideoUrl()}
@@ -445,7 +434,7 @@ const VideoWatchPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Comments Section - Below Video */}
+        {/* Comments Section */}
         <div className="max-w-2xl">
           <Card className="p-6">
             <div className="flex items-center mb-6">
@@ -489,6 +478,8 @@ const VideoWatchPage: React.FC = () => {
               {visibleComments.length > 0 ? (
                 visibleComments.map((comment) => {
                   const author = getCommentAuthor(comment);
+                  const isOwnComment = (currentUser?.role === 'admin' && comment.admin_id === currentUser?.id) || 
+                                     (currentUser?.role === 'student' && comment.user_id === currentUser?.id);
                   
                   return (
                     <div key={comment.id} className="border-b border-gray-100 pb-4 last:border-b-0">
@@ -510,32 +501,19 @@ const VideoWatchPage: React.FC = () => {
                           </div>
                         </div>
                         
-                        {/* Admin Controls */}
-                        {currentUser?.role === 'admin' && (
-                          <div className="flex space-x-1">
-                            {!comment.is_approved && (
-                              <button
-                                onClick={() => handleApproveComment(comment.id)}
-                                className="p-1 hover:bg-green-100 rounded text-green-600"
-                                title="Approve comment"
-                              >
-                                <Check className="h-3 w-3" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteComment(comment.id)}
-                              className="p-1 hover:bg-red-100 rounded text-red-600"
-                              title="Delete comment"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
+                        {canDeleteComment(comment) && (
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="p-1 hover:bg-red-100 rounded text-red-600"
+                            title="Delete comment"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
                         )}
                       </div>
                       
                       <p className="text-gray-700 text-sm mb-2">{comment.content}</p>
                       
-                      {/* Comment Status Indicators */}
                       <div className="flex items-center space-x-2">
                         {!comment.is_approved && (
                           <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
@@ -547,7 +525,7 @@ const VideoWatchPage: React.FC = () => {
                             Approved
                           </span>
                         )}
-                        {((comment.user_id === currentUser?.id) || (comment.admin_id && currentUser?.role === 'admin')) && (
+                        {isOwnComment && (
                           <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                             Your comment
                           </span>
@@ -570,7 +548,6 @@ const VideoWatchPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
       <Modal
         isOpen={modal.isOpen}
         onClose={closeModal}
