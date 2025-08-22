@@ -8,17 +8,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
-use App\Services\NotificationService;
 
 class UserManagementController extends Controller
 {
-    protected $notificationService;
-
-    public function __construct(NotificationService $notificationService)
-    {
-        $this->notificationService = $notificationService;
-    }
-
     /**
      * Display a listing of the users (students only).
      */
@@ -142,9 +134,6 @@ class UserManagementController extends Controller
             $userData['name'] = $userData['name'] ?? $userData['username'];
 
             $user = User::create($userData);
-
-            // Send welcome notification
-            $this->notificationService->sendWelcomeNotification($user);
 
             Log::info('User created successfully', ['user_id' => $user->id]);
 
@@ -328,12 +317,6 @@ class UserManagementController extends Controller
 
             $user->update(['access_end' => $newEnd]);
 
-            // Notify user about access extension
-            $daysRemaining = $user->access_end->diffInDays(now());
-            if ($daysRemaining <= 30) {
-                $this->notificationService->notifyAccessExpiring($user, $daysRemaining);
-            }
-
             Log::info('User access extended', [
                 'user_id' => $user->id,
                 'extended_days' => $request->extend_days,
@@ -357,49 +340,43 @@ class UserManagementController extends Controller
     }
 
     /**
-     * Assign categories to a user
-     */
-    public function assignCategories(Request $request, User $user)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'category_ids' => 'required|array',
-                'category_ids.*' => 'exists:categories,id',
-            ]);
+ * Assign categories to a user
+ */
+public function assignCategories(Request $request, User $user)
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            'category_ids' => 'required|array',
+            'category_ids.*' => 'exists:categories,id',
+        ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'error' => 'Validation failed',
-                    'details' => $validator->errors()
-                ], 422);
-            }
-
-            // Sync the categories for this user
-            $user->categories()->sync($request->category_ids);
-
-            // Get category names for notification
-            $categoryNames = $user->categories()->pluck('name')->toArray();
-
-            // Notify user about category assignment
-            $this->notificationService->notifyCategoriesAssigned($user, $categoryNames);
-
-            Log::info('Categories assigned to user successfully', [
-                'user_id' => $user->id,
-                'category_ids' => $request->category_ids
-            ]);
-
+        if ($validator->fails()) {
             return response()->json([
-                'message' => 'Categories assigned to user successfully',
-                'user' => [
-                    'id' => $user->id,
-                    'username' => $user->username,
-                    'assigned_categories' => $user->categories->pluck('name')
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error assigning categories to user: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to assign categories to user'], 500);
+                'error' => 'Validation failed',
+                'details' => $validator->errors()
+            ], 422);
         }
+
+        // Sync the categories for this user
+        $user->categories()->sync($request->category_ids);
+
+        Log::info('Categories assigned to user successfully', [
+            'user_id' => $user->id,
+            'category_ids' => $request->category_ids
+        ]);
+
+        return response()->json([
+            'message' => 'Categories assigned to user successfully',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'assigned_categories' => $user->categories->pluck('name')
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error assigning categories to user: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to assign categories to user'], 500);
     }
+}
 }
