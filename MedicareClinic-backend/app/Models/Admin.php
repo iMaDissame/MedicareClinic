@@ -41,4 +41,14 @@ class Admin extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(DirectChat::class);
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->hasMany(Notification::class)->unread()->notExpired();
+    }
 }

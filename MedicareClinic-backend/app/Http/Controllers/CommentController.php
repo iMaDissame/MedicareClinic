@@ -6,9 +6,17 @@ use App\Models\Comment;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
 
 class CommentController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * Helper method to check if current user is admin
      */
@@ -85,6 +93,11 @@ class CommentController extends Controller
             // Load relationships for response
             $comment->load(['user:id,name,email', 'video:id,title']);
 
+            // Notify user about comment approval
+            if ($comment->user_id) {
+                $this->notificationService->notifyCommentApproved($comment);
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $comment,
@@ -118,6 +131,11 @@ class CommentController extends Controller
 
             // Load relationships for response
             $comment->load(['user:id,name,email', 'video:id,title']);
+
+            // Notify user about comment rejection
+            if ($comment->user_id) {
+                $this->notificationService->notifyCommentRejected($comment, "Comment did not meet guidelines");
+            }
 
             return response()->json([
                 'success' => true,

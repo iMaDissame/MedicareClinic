@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Auth;
 
 class ChatController extends Controller
 {
-    // Get all chats for the authenticated user/admin
     public function index(Request $request)
     {
         $user = Auth::guard('api')->user();

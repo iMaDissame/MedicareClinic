@@ -63,24 +63,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('👤 Parsed user:', user);
           console.log('🔑 Auth type:', authType);
           
-          // Use the correct endpoint based on stored auth type
+          // Set auth state first (optimistic update)
+          setAuthState({
+            user,
+            isAuthenticated: true,
+            authType,
+          });
+          
+          // Then validate with server - but don't clear auth on failure
           const endpoint = authType === 'admin' ? '/admin/me' : '/auth/me';
-          console.log('🌐 Making request to:', endpoint);
+          console.log('🌐 Making validation request to:', endpoint);
           
           try {
             const response = await axiosClient.get(endpoint);
+            console.log('✅ Validation successful:', response.data);
             
-            console.log('✅ Validation response:', response.data);
+            // Update with fresh user data from server
+            setAuthState({
+              user: response.data,
+              isAuthenticated: true,
+              authType,
+            });
+          } catch (requestError: any) {
+            console.warn('⚠️ Auth validation failed, but keeping existing auth:', {
+              message: requestError.message,
+              status: requestError.response?.status,
+              statusText: requestError.response?.statusText,
+              url: requestError.config?.url
+            });
             
-            if (response.data) {
-              setAuthState({
-                user: response.data,
-                isAuthenticated: true,
-                authType,
-              });
-              console.log('🎉 Authentication validated successfully');
-            } else {
-              console.warn('❌ No data in validation response');
+            // Only clear auth if it's a definitive auth failure (not network issues)
+            if (requestError.response?.status === 401 && 
+                requestError.response?.data?.message === 'Unauthenticated.') {
+              console.log('🔒 Definitive auth failure - clearing storage');
               clearAuthStorage();
               setAuthState({
                 user: null,
@@ -88,19 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 authType: null,
               });
             }
-          } catch (requestError: any) {
-            console.error('❌ API request failed:', {
-              message: requestError.message,
-              status: requestError.response?.status,
-              statusText: requestError.response?.statusText,
-              url: requestError.config?.url
-            });
-            clearAuthStorage();
-            setAuthState({
-              user: null,
-              isAuthenticated: false,
-              authType: null,
-            });
+            // For other errors (network, server issues), keep existing auth
           }
         } catch (parseError) {
           console.error('❌ Error parsing stored data:', parseError);

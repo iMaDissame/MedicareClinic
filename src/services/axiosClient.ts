@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 const axiosClient = axios.create({
@@ -45,15 +44,32 @@ axiosClient.interceptors.response.use(
       data: error.response?.data
     });
     
+    // Only clear auth data on authentication validation endpoints
     if (error.response?.status === 401) {
-      console.log('🔒 Unauthorized - clearing auth data');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('authType');
+      const url = error.config?.url || '';
+      const isAuthValidationEndpoint = url.includes('/me') || url.includes('/login');
+      
+      if (isAuthValidationEndpoint) {
+        console.log('🔒 Auth validation failed - clearing auth data');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('authType');
+        
+        // Redirect to login only if not already there
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/MedicareClinic/login';
+        }
+      } else {
+        // For other 401 errors, just log - these might be permission issues
+        console.warn('⚠️ 401 error on non-auth endpoint:', url, 'This might be a permission or route guard issue');
+      }
     }
+    
     return Promise.reject(error);
   }
 );
+
+// Chat API functions
 export const getChats = () => axiosClient.get('/chats');
 export const startChat = (adminId: string) => axiosClient.post('/chats/start', { admin_id: adminId });
 export const getChatMessages = (chatId: string) => axiosClient.get(`/chats/${chatId}`);

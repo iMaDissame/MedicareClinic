@@ -12,12 +12,14 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use App\Services\NotificationService;
 
 class VideoController extends Controller
 {
     private $cloudinary;
+    protected $notificationService;
 
-    public function __construct()
+    public function __construct(NotificationService $notificationService)
     {
         $this->cloudinary = new Cloudinary([
             'cloud' => [
@@ -26,6 +28,7 @@ class VideoController extends Controller
                 'api_secret' => config('services.cloudinary.api_secret'),
             ]
         ]);
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -137,6 +140,11 @@ class VideoController extends Controller
 
             $video->load('category');
 
+            // Notify users about new video
+            if ($video->is_published) {
+                $this->notificationService->notifyVideoAdded($video);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Video uploaded successfully to Cloudinary',
@@ -207,6 +215,8 @@ class VideoController extends Controller
         }
 
         try {
+            $wasPublished = $video->is_published;
+
             $video->update([
                 'title' => $request->title,
                 'description' => $request->description,
@@ -215,6 +225,11 @@ class VideoController extends Controller
             ]);
 
             $video->load('category');
+
+            // Notify users if video was just published
+            if (!$wasPublished && $video->is_published) {
+                $this->notificationService->notifyVideoAdded($video);
+            }
 
             return response()->json([
                 'success' => true,
@@ -336,9 +351,16 @@ class VideoController extends Controller
     public function togglePublishStatus(Video $video): JsonResponse
     {
         try {
+            $wasPublished = $video->is_published;
+
             $video->update([
                 'is_published' => !$video->is_published
             ]);
+
+            // Notify users if video was just published
+            if (!$wasPublished && $video->is_published) {
+                $this->notificationService->notifyVideoAdded($video);
+            }
 
             return response()->json([
                 'success' => true,
@@ -664,6 +686,9 @@ class VideoController extends Controller
 
                 // Load the user relationship
                 $comment->load('user');
+
+                // Notify admins about new comment
+                $this->notificationService->notifyNewComment($comment);
             }
 
             return response()->json([

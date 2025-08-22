@@ -7,9 +7,17 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use App\Services\NotificationService;
 
 class CategoryController extends Controller
 {
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * Display a listing of categories
      */
@@ -205,6 +213,12 @@ class CategoryController extends Controller
 
         try {
             $category->users()->sync($request->user_ids);
+
+            // Notify users about category assignment
+            $users = User::whereIn('id', $request->user_ids)->get();
+            foreach ($users as $user) {
+                $this->notificationService->notifyCategoriesAssigned($user, [$category->name]);
+            }
 
             return response()->json([
                 'success' => true,
