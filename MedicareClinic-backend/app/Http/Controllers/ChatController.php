@@ -66,19 +66,32 @@ class ChatController extends Controller
 
     // Start a new chat (user initiates)
     public function startChat(Request $request)
-    {
-        $user = Auth::guard('api')->user();
+{
+    $user = Auth::guard('api')->user();
+    $admin = Auth::guard('admin')->user();
+
+    if ($user) {
         $adminId = $request->input('admin_id');
-
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        if (!$adminId) {
+            return response()->json(['error' => 'admin_id is required'], 400);
         }
-
         $chat = DirectChat::firstOrCreate([
             'user_id' => $user->id,
             'admin_id' => $adminId,
         ]);
-
         return response()->json(['success' => true, 'data' => $chat]);
+    } elseif ($admin) {
+        $userId = $request->input('user_id');
+        if (!$userId) {
+            return response()->json(['error' => 'user_id is required'], 400);
+        }
+        $chat = DirectChat::firstOrCreate([
+            'user_id' => $userId,
+            'admin_id' => $admin->id,
+        ]);
+        return response()->json(['success' => true, 'data' => $chat]);
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
 }

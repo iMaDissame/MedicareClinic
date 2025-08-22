@@ -111,3 +111,7 @@ Route::middleware(['auth:api,admin'])->group(function () {
     Route::get('chats/{chat}', [ChatController::class, 'show']);
     Route::post('chats/{chat}/messages', [ChatController::class, 'sendMessage']);
 });
+
+Route::get('admins', function() {
+    return response()->json(['success' => true, 'data' => \App\Models\Admin::all()]);
+})->middleware('auth:api');
