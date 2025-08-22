@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -15,10 +15,12 @@ import {
   Info,
   Check,
   Trash2,
-  Filter
+  Filter,
+  ChevronDown,
+  UserCircle
 } from 'lucide-react';
 import Button from './ui/Button';
-import axiosClient from '../services/axiosClient'; // Added missing import
+import axiosClient from '../services/axiosClient';
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -45,9 +47,29 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const [showFullPage, setShowFullPage] = useState(false);
   const [filter, setFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  
+  // User dropdown state
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationDropdownRef = useRef<HTMLDivElement>(null);
 
   // Use axiosClient instead of undefined api
   const api = axiosClient;
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setShowUserDropdown(false);
+      }
+      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Fetch unread count
   const fetchUnreadCount = async () => {
@@ -165,6 +187,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
     }
     setShowNotifications(!showNotifications);
     setShowFullPage(false);
+    setShowUserDropdown(false);
   };
 
   // Show full notifications page
@@ -183,6 +206,12 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  // Toggle user dropdown
+  const toggleUserDropdown = () => {
+    setShowUserDropdown(!showUserDropdown);
+    setShowNotifications(false);
   };
 
   // Poll for new notifications
@@ -347,7 +376,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
 
           <div className="flex items-center space-x-2 sm:space-x-4">
             {/* Notification Bell */}
-            <div className="relative">
+            <div className="relative" ref={notificationDropdownRef}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -442,36 +471,98 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
               )}
             </div>
 
-            <div className="hidden sm:flex items-center space-x-2 text-sm text-gray-600">
-              <User className="h-4 w-4" />
-              <span className="hidden md:inline">{user?.username}</span>
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                {user?.role}
-              </span>
+            {/* User Dropdown */}
+            <div className="relative" ref={userDropdownRef}>
+              <button
+                onClick={toggleUserDropdown}
+                className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <UserCircle className="h-6 w-6" />
+                <span className="hidden md:inline">{user?.username}</span>
+                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  {user?.role}
+                </span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+
+              {/* User Dropdown Menu */}
+              {showUserDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="p-4 border-b border-gray-200">
+                    <div className="flex items-center space-x-3">
+                      <UserCircle className="h-8 w-8 text-gray-400" />
+                      <div>
+                        <p className="font-medium text-gray-900">{user?.name || user?.username}</p>
+                        <p className="text-sm text-gray-500">{user?.email}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="py-2">
+                    {user?.role === 'admin' ? (
+                      <>
+                        <Link
+                          to="/admin/profile"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          <Settings className="h-4 w-4 mr-3" />
+                          Profile Settings
+                        </Link>
+                        <Link
+                          to="/admin/dashboard"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          <User className="h-4 w-4 mr-3" />
+                          Admin Dashboard
+                        </Link>
+                        <Link
+                          to="/admin/chat"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-3" />
+                          Admin Chat
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          to="/app/dashboard"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          <User className="h-4 w-4 mr-3" />
+                          Dashboard
+                        </Link>
+                        <Link
+                          to="/app/chat"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          <MessageCircle className="h-4 w-4 mr-3" />
+                          Chat Support
+                        </Link>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="border-t border-gray-200 py-2">
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        handleLogout();
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4 mr-3" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-
-            {user?.role === 'admin' && (
-              <Link to="/admin" className="hidden sm:block">
-                <Button variant="ghost" size="sm">
-                  <Settings className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Admin</span>
-                </Button>
-              </Link>
-            )}
-
-            {user?.role !== 'admin' && (
-              <Link to="/app/chat">
-                <Button variant="ghost" size="sm">
-                  <MessageCircle className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Chat</span>
-                </Button>
-              </Link>
-            )}
-
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Logout</span>
-            </Button>
           </div>
         </div>
       </div>

@@ -10,6 +10,7 @@ use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AdminProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserManagementController;
 
@@ -54,6 +55,11 @@ Route::group(['prefix' => 'admin'], function () {
         Route::patch('users/{user}/toggle-status', [UserManagementController::class, 'toggleStatus']);
         Route::patch('users/{user}/extend-access', [UserManagementController::class, 'extendAccess']);
         Route::post('users/{user}/assign-categories', [UserManagementController::class, 'assignCategories']);
+        Route::get('/profile', [AdminProfileController::class, 'show']);
+        Route::put('/profile', [AdminProfileController::class, 'update']);
+        Route::put('/profile/password', [AdminProfileController::class, 'updatePassword']);
+        Route::get('/profile/statistics', [AdminProfileController::class, 'getStatistics']);
+        Route::get('/profile/activity', [AdminProfileController::class, 'getActivityLog']);
 
         // Admin Video Management Routes
         Route::get('videos/statistics', [VideoController::class, 'statistics']);
@@ -123,6 +129,6 @@ Route::middleware('auth:api,admin')->group(function () {
     Route::post('chats/{chat}/messages', [ChatController::class, 'sendMessage']);
 });
 
-Route::get('admins', function() {
+Route::get('admins', function () {
     return response()->json(['success' => true, 'data' => \App\Models\Admin::all()]);
 })->middleware('auth:api');

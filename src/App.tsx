@@ -23,6 +23,7 @@ import AccessExpired from './pages/AccessExpired';
 import Unauthorized from './pages/Unauthorized';
 import AdminChat from './pages/admin/AdminChat'; // Add this import
 import UserChat from './pages/UserChat'; // Add this import
+import AdminProfile from './pages/admin/AdminProfile';
 
 
 
@@ -77,6 +78,7 @@ function App() {
             <Route path="videos" element={<VideoManagement />} />
             <Route path="videos/new" element={<AddVideo />} />
             <Route path="videos/edit/:id" element={<EditVideo />} />
+            <Route path="profile" element={<AdminProfile />} />
 
             {/* Video watch page route for admin preview */}
             <Route path="videos/watch/:id" element={<VideoWatchPage />} />
