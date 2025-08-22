@@ -60,6 +60,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::get('videos', [VideoController::class, 'index']);
         Route::post('videos', [VideoController::class, 'store']);
         Route::put('videos/{video}', [VideoController::class, 'update']);
+        Route::get('videos/{video}/edit', [VideoController::class, 'edit']);
         Route::delete('videos/{video}', [VideoController::class, 'destroy']);
         Route::patch('videos/{video}/toggle-publish', [VideoController::class, 'togglePublishStatus']);
         Route::get('categories/{category}/videos', [VideoController::class, 'getByCategory']);

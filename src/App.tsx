@@ -76,7 +76,7 @@ function App() {
             {/* Video Management Routes */}
             <Route path="videos" element={<VideoManagement />} />
             <Route path="videos/new" element={<AddVideo />} />
-            <Route path="videos/edit/:courseId" element={<EditVideo />} />
+            <Route path="videos/edit/:id" element={<EditVideo />} />
 
             {/* Video watch page route for admin preview */}
             <Route path="videos/watch/:id" element={<VideoWatchPage />} />

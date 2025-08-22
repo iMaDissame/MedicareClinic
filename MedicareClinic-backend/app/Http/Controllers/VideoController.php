@@ -193,6 +193,54 @@ class VideoController extends Controller
             ], 500);
         }
     }
+    /**
+     * Show the form for editing the specified video (for admin use)
+     */
+    public function edit($id): JsonResponse
+    {
+        try {
+            $video = Video::with('category')->findOrFail($id);
+
+            // Return video data specifically for editing
+            $videoData = [
+                'id' => $video->id,
+                'title' => $video->title,
+                'description' => $video->description,
+                'category_id' => $video->category_id,
+                'is_published' => $video->is_published,
+                'video_url' => $video->video_url, // Cloudinary URL
+                'cover_url' => $video->cover_url, // Cloudinary cover URL
+                'cloudinary_public_id' => $video->cloudinary_public_id,
+                'cover_cloudinary_id' => $video->cover_cloudinary_id,
+                'duration' => $video->duration,
+                'file_size' => $video->file_size,
+                'category' => $video->category ? [
+                    'id' => $video->category->id,
+                    'name' => $video->category->name,
+                ] : null,
+                'created_at' => $video->created_at,
+                'updated_at' => $video->updated_at,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $videoData,
+                'message' => 'Video data retrieved for editing'
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Video not found',
+                'error' => 'Video not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve video for editing',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Update the specified video
