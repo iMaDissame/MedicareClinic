@@ -49,6 +49,9 @@ Route::group(['prefix' => 'admin'], function () {
             Route::get('/users', [ProgressController::class, 'getAllUsersProgress']);
             Route::get('/users/{user}', [ProgressController::class, 'getUserProgress']);
         });
+
+        Route::get('videos/{id}/streaming', [VideoController::class, 'getOptimizedVideo']);
+
         // User Management Routes
         Route::get('users/statistics', [UserManagementController::class, 'statistics']);
         Route::get('users', [UserManagementController::class, 'index']);

@@ -43,8 +43,8 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, videoTitle
             <Button onClick={onClose} className="flex-1">
               View Videos
             </Button>
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               onClick={() => window.location.reload()}
               className="flex-1"
             >
@@ -69,7 +69,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
       validationErrors: error.validationErrors,
       requestData: error.requestData
     };
-    
+
     navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2));
     alert('Error details copied to clipboard!');
   };
@@ -167,7 +167,7 @@ const AddVideo: React.FC = () => {
   const videoFileInputRef = useRef<HTMLInputElement>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -182,12 +182,12 @@ const AddVideo: React.FC = () => {
     validationErrors?: any;
     requestData?: any;
   } | null>(null);
-  
+
   // Dropdown states
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -241,7 +241,7 @@ const AddVideo: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedCategory) {
       alert('Please select a category');
       return;
@@ -259,7 +259,7 @@ const AddVideo: React.FC = () => {
 
     setIsSubmitting(true);
     setUploadProgress(0);
-    
+
     try {
       // Create FormData for file upload
       const uploadData = new FormData();
@@ -268,7 +268,7 @@ const AddVideo: React.FC = () => {
       uploadData.append('video_file', formData.video_file);
       uploadData.append('cover_image', formData.cover_image);
       uploadData.append('category_id', selectedCategory.id.toString());
-      
+
       // Fix: Send boolean as '1' or '0' for Laravel
       uploadData.append('is_published', formData.is_published ? '1' : '0');
 
@@ -318,10 +318,10 @@ const AddVideo: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Failed to create video:', error);
-      
+
       const errorInfo = {
-        message: error.code === 'ECONNABORTED' 
-          ? 'Upload timeout - file too large or connection too slow' 
+        message: error.code === 'ECONNABORTED'
+          ? 'Upload timeout - file too large or connection too slow'
           : error.response?.data?.message || error.message || 'Unknown error occurred',
         status: error.response?.status,
         details: error.response?.data,
@@ -355,17 +355,17 @@ const AddVideo: React.FC = () => {
   const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
+   
       const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm'];
       if (!allowedTypes.includes(file.type)) {
         alert('Please select a valid video file (MP4, AVI, MOV, WMV, WebM)');
         return;
       }
 
-      // Validate file size (e.g., max 500MB)
-      const maxSize = 500 * 1024 * 1024; // 500MB in bytes
+     
+      const maxSize = 2 * 1024 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert('File size must be less than 500MB');
+        alert('File size must be less than 2GB');
         return;
       }
 
@@ -637,8 +637,8 @@ const AddVideo: React.FC = () => {
           </div>
 
           <div className="flex space-x-4 pt-6">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="flex-1"
               disabled={isSubmitting}
             >
@@ -661,8 +661,8 @@ const AddVideo: React.FC = () => {
           {/* Upload Progress Bar */}
           {isSubmitting && uploadProgress > 0 && (
             <div className="w-full bg-gray-200 rounded-full h-2 mt-4">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               ></div>
             </div>
@@ -674,7 +674,7 @@ const AddVideo: React.FC = () => {
         <Card className="p-6 bg-yellow-50 border-yellow-200">
           <h3 className="font-semibold text-yellow-900 mb-2">No Categories Available</h3>
           <p className="text-yellow-800 text-sm mb-3">
-            You need to create categories before adding videos. 
+            You need to create categories before adding videos.
           </p>
           <Button
             variant="secondary"
