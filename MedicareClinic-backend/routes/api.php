@@ -101,6 +101,7 @@ Route::middleware(['auth:api,admin'])->group(function () {
     Route::patch('comments/{comment}/reject', [CommentController::class, 'reject']);
     Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
     Route::post('/progress', [ProgressController::class, 'store']);
+    Route::get('user-stats/{user}', [ProgressController::class, 'getUserStats']);
 });
 
 

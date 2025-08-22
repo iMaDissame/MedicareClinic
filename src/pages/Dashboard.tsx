@@ -1,26 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Play, Clock, BookOpen, Calendar, AlertCircle } from 'lucide-react';
+import { Play, Clock, BookOpen, Calendar, AlertCircle, Eye, EyeOff, TrendingUp, Award, Edit, Trash2, User, BarChart3, Target, Star } from 'lucide-react';
 import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
 import { UserProgress } from '../types';
 import axiosClient from '../services/axiosClient';
 
+interface Category {
+  id: number;
+  name: string;
+}
+
 interface Video {
-  id: string;
+  id: number;
   title: string;
   description: string;
   video_path: string;
-  video_url: string;
+  video_url?: string;
+  cloudinary_url?: string;
+  cloudinary_public_id?: string;
   cover_image: string;
-  cover_url: string;
+  cover_url?: string;
+  cover_cloudinary_url?: string;
+  duration?: number;
+  file_size?: number;
   is_published: boolean;
-  category: {
-    id: number;
-    name: string;
-  };
+  category: Category | null;
   created_at: string;
   updated_at: string;
+  views_count?: number;
+  average_rating?: number;
 }
 
 const Dashboard: React.FC = () => {
@@ -29,12 +39,18 @@ const Dashboard: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userStats, setUserStats] = useState({
+    totalWatchTime: 0,
+    favoriteCategory: '',
+    lastWatched: null as Video | null,
+    achievements: 0
+  });
 
   useEffect(() => {
-    loadUserVideos();
-    const savedProgress = localStorage.getItem(`progress_${user?.id}`);
-    if (savedProgress) {
-      setProgress(JSON.parse(savedProgress));
+    if (user?.id) {
+      loadUserVideos();
+      loadUserProgress();
+      loadUserStats();
     }
   }, [user?.id]);
 
@@ -56,172 +72,515 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getVideoProgress = (videoId: string) => {
-    return progress.find(p => p.videoId === videoId)?.progress || 0;
+  const loadUserProgress = async () => {
+    try {
+      // Load progress from API if available
+      const response = await axiosClient.get(`/user-progress/${user?.id}`);
+      if (response.data.success) {
+        setProgress(response.data.data.progress_details || []);
+      }
+    } catch (err: any) {
+      // Fallback to localStorage if API fails
+      const savedProgress = localStorage.getItem(`progress_${user?.id}`);
+      if (savedProgress) {
+        setProgress(JSON.parse(savedProgress));
+      }
+      console.warn('Failed to load progress from API, using localStorage:', err);
+    }
+  };
+
+  const loadUserStats = async () => {
+    try {
+      const response = await axiosClient.get(`/user-stats/${user?.id}`);
+      if (response.data.success) {
+        setUserStats(response.data.data);
+      }
+    } catch (err: any) {
+      console.warn('Failed to load user stats:', err);
+    }
+  };
+
+  const getVideoProgress = (videoId: number) => {
+    const progressItem = progress.find(p => p.videoId === videoId.toString() || p.video_id === videoId);
+    return progressItem?.progress || 0;
   };
 
   const getAccessDaysRemaining = () => {
-    if (!user) return 0;
+    if (!user?.access_end) return 0;
     const now = new Date();
     const accessEnd = new Date(user.access_end);
     const diffTime = accessEnd.getTime() - now.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  const getCoverImageUrl = (video: Video) => {
+    // Priority order: cover_cloudinary_url > cover_url > constructed URL from cover_image > placeholder
+    if (video.cover_cloudinary_url) {
+      return video.cover_cloudinary_url;
+    }
+
+    if (video.cover_url) {
+      return video.cover_url;
+    }
+
+    if (video.cover_image) {
+      // Check if it's already a full URL
+      if (video.cover_image.startsWith('http')) {
+        return video.cover_image;
+      }
+      // Handle local storage paths
+      return `http://127.0.0.1:8000/storage/${video.cover_image}`;
+    }
+
+    // Enhanced placeholder matching VideoManagement style
+    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"%3E%3Crect width="400" height="200" fill="%23f3f4f6"/%3E%3Ctext x="200" y="100" text-anchor="middle" dy="0.3em" font-family="Arial, sans-serif" font-size="16" fill="%236b7280"%3ENo Image%3C/text%3E%3C/svg%3E';
+  };
+
+  const formatDuration = (durationInSeconds?: number) => {
+    if (!durationInSeconds) return 'N/A';
+
+    const hours = Math.floor(durationInSeconds / 3600);
+    const minutes = Math.floor((durationInSeconds % 3600) / 60);
+    const seconds = Math.floor(durationInSeconds % 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    }
+    return `${minutes}m ${seconds}s`;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return 'N/A';
+
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return '0 Bytes';
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const completedVideos = progress.filter(p => p.completed || p.progress >= 95).length;
+  const inProgressVideos = progress.filter(p => p.progress > 0 && p.progress < 95).length;
+  const notStartedVideos = videos.length - completedVideos - inProgressVideos;
+  const averageProgress = progress.length > 0
+    ? Math.round(progress.reduce((sum, p) => sum + (p.progress || 0), 0) / progress.length)
+    : 0;
+
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-600 text-lg">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-      <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, {user.username}!
-        </h1>
-        <p className="text-gray-600">Continue your learning journey</p>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="mb-6 p-4 border border-red-200 bg-red-50 rounded-lg">
-          <div className="flex items-center text-red-600">
-            <AlertCircle className="h-5 w-5 mr-2" />
-            <span>{error}</span>
-            <button
-              onClick={() => setError(null)}
-              className="ml-auto text-red-600 hover:text-red-800"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        <Card className="p-4 lg:p-6">
-          <div className="flex items-center">
-            <div className="p-2 lg:p-3 bg-blue-100 rounded-lg">
-              <BookOpen className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />
-            </div>
-            <div className="ml-3 lg:ml-4">
-              <p className="text-xs lg:text-sm font-medium text-gray-600">Available Videos</p>
-              <p className="text-xl lg:text-2xl font-bold text-gray-900">{videos.length}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4 lg:p-6">
-          <div className="flex items-center">
-            <div className="p-2 lg:p-3 bg-green-100 rounded-lg">
-              <Play className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
-            </div>
-            <div className="ml-3 lg:ml-4">
-              <p className="text-xs lg:text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-xl lg:text-2xl font-bold text-gray-900">
-                {progress.filter(p => p.completed).length}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4 lg:p-6">
-          <div className="flex items-center">
-            <div className="p-2 lg:p-3 bg-yellow-100 rounded-lg">
-              <Calendar className="h-5 w-5 lg:h-6 lg:w-6 text-yellow-600" />
-            </div>
-            <div className="ml-3 lg:ml-4">
-              <p className="text-xs lg:text-sm font-medium text-gray-600">Access Expires</p>
-              <p className="text-xl lg:text-2xl font-bold text-gray-900">
-                {getAccessDaysRemaining()}d
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <div className="mb-4 lg:mb-6">
-        <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-4">Your Videos</h2>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading your videos...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-          {videos.map((video) => {
-            const videoProgress = getVideoProgress(video.id);
-            return (
-              <Card key={video.id} className="overflow-hidden hover:shadow-xl transition-shadow duration-200">
-                <div className="relative">
-                  <img
-                    src={video.cover_url || '/placeholder-cover.jpg'}
-                    alt={video.title}
-                    className="w-full h-40 sm:h-48 object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = '/placeholder-cover.jpg';
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200">
-                    <Link
-                      to={`/app/watch/${video.id}`}  // Updated route
-                      className="bg-white text-black px-4 lg:px-6 py-2 rounded-full font-medium flex items-center space-x-2 hover:bg-gray-100 transition-colors text-sm lg:text-base"
-                    >
-                      <Play className="h-4 w-4" />
-                      <span>Watch Now</span>
-                    </Link>
-                  </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        {/* Welcome Header */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+              <div className="mb-4 md:mb-0">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+                  Welcome back, {user.username}! 👋
+                </h1>
+                <p className="text-blue-100 text-lg">Ready to continue your learning journey?</p>
+                <div className="flex items-center mt-3">
+                  <User className="h-4 w-4 mr-2" />
+                  <span className="text-blue-200 text-sm">
+                    Member since {formatDate(user.created_at || new Date().toISOString())}
+                  </span>
                 </div>
-                <div className="p-4 lg:p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-base lg:text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
-                      {video.title}
-                    </h3>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2 whitespace-nowrap">
-                      {video.category?.name || 'Uncategorized'}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {video.description}
-                  </p>
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {/* You might want to add duration to your Video model */}
-                      30 min
-                    </div>
-                    <div>{videoProgress}% Complete</div>
-                  </div>
-                  {videoProgress > 0 && (
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${videoProgress}%` }}
-                      ></div>
-                    </div>
-                  )}
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{averageProgress}%</div>
+                  <div className="text-blue-200 text-sm">Avg Progress</div>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {!loading && videos.length === 0 && (
-        <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center p-3 bg-gray-100 rounded-full mb-4">
-            <BookOpen className="h-8 w-8 text-gray-400" />
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{completedVideos}</div>
+                  <div className="text-blue-200 text-sm">Completed</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{userStats.achievements || 0}</div>
+                  <div className="text-blue-200 text-sm">Achievements</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Videos Available</h3>
-          <p className="text-gray-600">You don't have access to any videos yet or no videos are published in your categories.</p>
         </div>
-      )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 border border-red-200 bg-red-50 rounded-xl shadow-sm">
+            <div className="flex items-center text-red-600">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              <span>{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="ml-auto text-red-600 hover:text-red-800 font-bold text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Enhanced Statistics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
+            <div className="flex items-center">
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <BookOpen className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Available Videos</p>
+                <p className="text-2xl font-bold text-gray-900">{videos.length}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
+            <div className="flex items-center">
+              <div className="p-3 bg-green-100 rounded-xl">
+                <Award className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Completed</p>
+                <p className="text-2xl font-bold text-gray-900">{completedVideos}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {videos.length > 0 ? Math.round((completedVideos / videos.length) * 100) : 0}% of total
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
+            <div className="flex items-center">
+              <div className="p-3 bg-orange-100 rounded-xl">
+                <TrendingUp className="h-6 w-6 text-orange-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">In Progress</p>
+                <p className="text-2xl font-bold text-gray-900">{inProgressVideos}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {videos.length > 0 ? Math.round((inProgressVideos / videos.length) * 100) : 0}% of total
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
+            <div className="flex items-center">
+              <div className="p-3 bg-yellow-100 rounded-xl">
+                <Calendar className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Access Expires</p>
+                <p className="text-2xl font-bold text-gray-900">{getAccessDaysRemaining()}d</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {getAccessDaysRemaining() > 7 ? 'Plenty of time left' : 'Renew soon'}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* User Progress Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card className="p-6 bg-white shadow-lg border-0">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <BarChart3 className="h-5 w-5 mr-2 text-indigo-600" />
+              Learning Progress
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">Completed</span>
+                  <span className="font-medium">{completedVideos} videos</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full bg-green-500"
+                    style={{ width: `${videos.length > 0 ? (completedVideos / videos.length) * 100 : 0}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">In Progress</span>
+                  <span className="font-medium">{inProgressVideos} videos</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full bg-blue-500"
+                    style={{ width: `${videos.length > 0 ? (inProgressVideos / videos.length) * 100 : 0}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">Not Started</span>
+                  <span className="font-medium">{notStartedVideos} videos</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full bg-gray-400"
+                    style={{ width: `${videos.length > 0 ? (notStartedVideos / videos.length) * 100 : 0}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-white shadow-lg border-0">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Target className="h-5 w-5 mr-2 text-indigo-600" />
+              Learning Insights
+            </h3>
+            <div className="space-y-3">
+              {userStats.favoriteCategory && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Favorite Category:</span>
+                  <span className="font-medium">{userStats.favoriteCategory}</span>
+                </div>
+              )}
+              {userStats.totalWatchTime > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Watch Time:</span>
+                  <span className="font-medium">{formatDuration(userStats.totalWatchTime)}</span>
+                </div>
+              )}
+              {userStats.lastWatched && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Last Watched:</span>
+                  <span className="font-medium text-right">{userStats.lastWatched.title}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-gray-600">Average Progress:</span>
+                <span className="font-medium">{averageProgress}%</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Videos Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Your Learning Content</h2>
+            <div className="text-sm text-gray-600">
+              {videos.length} video{videos.length !== 1 ? 's' : ''} available • {completedVideos} completed
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600 text-lg">Loading your videos...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {videos.map((video) => {
+              const videoProgress = getVideoProgress(video.id);
+              const isCompleted = videoProgress >= 95;
+              const hasStarted = videoProgress > 0;
+
+              return (
+                <VideoCard
+                  key={video.id}
+                  video={video}
+                  videoProgress={videoProgress}
+                  isCompleted={isCompleted}
+                  hasStarted={hasStarted}
+                  getCoverImageUrl={getCoverImageUrl}
+                  formatDate={formatDate}
+                  formatDuration={formatDuration}
+                  formatFileSize={formatFileSize}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {!loading && videos.length === 0 && (
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center p-4 bg-blue-100 rounded-full mb-6">
+              <BookOpen className="h-12 w-12 text-blue-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">No Videos Available Yet</h3>
+            <p className="text-gray-600 max-w-md mx-auto">
+              It looks like no learning content has been assigned to you yet. Check back later or contact your instructor for more information.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
+  );
+};
+
+interface VideoCardProps {
+  video: Video;
+  videoProgress: number;
+  isCompleted: boolean;
+  hasStarted: boolean;
+  getCoverImageUrl: (video: Video) => string;
+  formatDate: (dateString: string) => string;
+  formatDuration: (duration?: number) => string;
+  formatFileSize: (bytes?: number) => string;
+}
+
+const VideoCard: React.FC<VideoCardProps> = ({
+  video,
+  videoProgress,
+  isCompleted,
+  hasStarted,
+  getCoverImageUrl,
+  formatDate,
+  formatDuration,
+  formatFileSize
+}) => {
+  return (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 bg-white h-full flex flex-col">
+      <div className="relative group">
+        <img
+          src={getCoverImageUrl(video)}
+          alt={video.title}
+          className="w-full h-48 object-cover cursor-pointer"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"%3E%3Crect width="400" height="200" fill="%23f3f4f6"/%3E%3Ctext x="200" y="100" text-anchor="middle" dy="0.3em" font-family="Arial, sans-serif" font-size="16" fill="%236b7280"%3ENo Image%3C/text%3E%3C/svg%3E';
+          }}
+        />
+
+        {/* Play button overlay - matching VideoManagement style */}
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center cursor-pointer">
+          <Link
+            to={`/app/watch/${video.id}`}
+            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 transform hover:scale-110 transition-transform"
+            title="Watch video"
+          >
+            <Play className="h-6 w-6 text-gray-700 ml-1" />
+          </Link>
+        </div>
+
+        {/* Status badge - top right */}
+        <div className="absolute top-2 right-2">
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${video.is_published
+            ? 'bg-green-100 text-green-800'
+            : 'bg-yellow-100 text-yellow-800'
+            }`}>
+            {video.is_published ? 'Published' : 'Draft'}
+          </span>
+        </div>
+
+        {/* Category badge - top left */}
+        {video.category && (
+          <div className="absolute top-2 left-2">
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+              {video.category.name}
+            </span>
+          </div>
+        )}
+
+        {/* Completion badge */}
+        {isCompleted && (
+          <div className="absolute top-12 right-2">
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-500 text-white">
+              ✓ Completed
+            </span>
+          </div>
+        )}
+
+        {/* Rating badge if available */}
+        {video.average_rating && video.average_rating > 0 && (
+          <div className="absolute bottom-2 left-2">
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 flex items-center">
+              <Star className="h-3 w-3 mr-1 fill-yellow-500 text-yellow-500" />
+              {video.average_rating.toFixed(1)}
+            </span>
+          </div>
+        )}
+
+        {/* Views count if available */}
+        {video.views_count !== undefined && (
+          <div className="absolute bottom-2 right-2">
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 flex items-center">
+              <Eye className="h-3 w-3 mr-1" />
+              {video.views_count}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 flex-grow flex flex-col">
+        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2" title={video.title}>
+          {video.title}
+        </h3>
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-grow" title={video.description}>
+          {video.description || 'No description provided'}
+        </p>
+
+        {/* Video metadata */}
+        <div className="space-y-2 text-xs text-gray-500 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Clock className="h-3 w-3 mr-1" />
+              <span>{formatDuration(video.duration)}</span>
+            </div>
+            <div>
+              <span>{formatFileSize(video.file_size)}</span>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <Calendar className="h-3 w-3 mr-1" />
+            <span>Added {formatDate(video.created_at)}</span>
+          </div>
+        </div>
+
+        {/* Progress section */}
+        {hasStarted && (
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-600">Your Progress</span>
+              <span className="font-medium text-gray-900">{Math.round(videoProgress)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all duration-300 ${isCompleted
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                  }`}
+                style={{ width: `${videoProgress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+
+        {/* Action button */}
+        <Link to={`/app/watch/${video.id}`} className="mt-auto">
+          <Button
+            size="sm"
+            variant={isCompleted ? 'secondary' : 'primary'}
+            className="w-full"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            {isCompleted ? 'Review Video' : hasStarted ? 'Continue Learning' : 'Start Learning'}
+          </Button>
+        </Link>
+      </div>
+    </Card>
   );
 };
 

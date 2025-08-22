@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, MessageCircle, Trash2, Check, X, User, Calendar, Shield, CheckCircle } from 'lucide-react';
+import { 
+  ArrowLeft, Send, MessageCircle, Trash2, Check, X, User, Calendar, Shield, 
+  CheckCircle, Play, Pause, Volume2, VolumeX, Maximize, SkipForward, SkipBack,
+  Settings, Download, Share2, RotateCcw, FastForward, Rewind
+} from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import axiosClient from '../services/axiosClient';
@@ -36,10 +40,15 @@ interface VideoData {
   id: number;
   title: string;
   description: string;
-  video_path: string;
+  video_path?: string;
   video_url?: string;
-  cover_image: string;
+  cloudinary_url?: string;
+  cloudinary_public_id?: string;
+  cover_image?: string;
   cover_url?: string;
+  cover_cloudinary_url?: string;
+  duration?: number;
+  file_size?: number;
   is_published: boolean;
   category: Category | null;
   created_at: string;
@@ -96,7 +105,18 @@ const VideoWatchPage: React.FC = () => {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [videoProgress, setVideoProgress] = useState(0);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [showControls, setShowControls] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Modal State
   const [modal, setModal] = useState<{
@@ -126,22 +146,100 @@ const VideoWatchPage: React.FC = () => {
       if (videoElement.duration) {
         const progress = (videoElement.currentTime / videoElement.duration) * 100;
         setVideoProgress(progress);
+        setCurrentTime(videoElement.currentTime);
         saveProgress(video.id, progress);
       }
     };
 
     const handleVideoEnd = () => {
       saveProgress(video.id, 100);
+      setIsPlaying(false);
     };
+
+    const handleVideoError = () => {
+      setVideoError('Failed to load video. Please try refreshing the page.');
+    };
+
+    const handleVideoCanPlay = () => {
+      setVideoError(null);
+      setDuration(videoElement.duration || 0);
+    };
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
 
     videoElement.addEventListener('timeupdate', updateProgress);
     videoElement.addEventListener('ended', handleVideoEnd);
+    videoElement.addEventListener('error', handleVideoError);
+    videoElement.addEventListener('canplay', handleVideoCanPlay);
+    videoElement.addEventListener('play', handlePlay);
+    videoElement.addEventListener('pause', handlePause);
+    videoElement.addEventListener('loadedmetadata', handleVideoCanPlay);
 
     return () => {
       videoElement.removeEventListener('timeupdate', updateProgress);
       videoElement.removeEventListener('ended', handleVideoEnd);
+      videoElement.removeEventListener('error', handleVideoError);
+      videoElement.removeEventListener('canplay', handleVideoCanPlay);
+      videoElement.removeEventListener('play', handlePlay);
+      videoElement.removeEventListener('pause', handlePause);
+      videoElement.removeEventListener('loadedmetadata', handleVideoCanPlay);
     };
   }, [video, currentUser]);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!videoRef.current) return;
+      
+      switch (e.code) {
+        case 'Space':
+          e.preventDefault();
+          togglePlayPause();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          skipBackward();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          skipForward();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          adjustVolume(0.1);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          adjustVolume(-0.1);
+          break;
+        case 'KeyM':
+          e.preventDefault();
+          toggleMute();
+          break;
+        case 'KeyF':
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
+  // Auto-hide controls
+  const resetControlsTimeout = () => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    setShowControls(true);
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (isPlaying) {
+        setShowControls(false);
+      }
+    }, 3000);
+  };
 
   const showModal = (title: string, message: string, type: 'success' | 'error' = 'success') => {
     setModal({
@@ -187,7 +285,8 @@ const VideoWatchPage: React.FC = () => {
       const response = await axiosClient.get(`/videos/${videoId}`);
       
       if (response.data && response.data.success) {
-        setVideo(response.data.data);
+        const videoData = response.data.data;
+        setVideo(videoData);
       } else {
         setError(response.data?.message || 'Failed to fetch video');
       }
@@ -218,22 +317,41 @@ const VideoWatchPage: React.FC = () => {
     }
   };
 
-  const getVideoUrl = () => {
+  const getVideoUrl = (): string => {
     if (!video) return '';
+    
+    // Priority order: Cloudinary URL > video_url > constructed local path
+    if (video.cloudinary_url) {
+      return video.cloudinary_url;
+    }
+    
+    if (video.video_url && video.video_url.includes('cloudinary')) {
+      return video.video_url;
+    }
     
     if (video.video_url) {
       return video.video_url;
     }
     
     if (video.video_path) {
-      return `http://127.0.0.1:8000/storage/${video.video_path}`;
+      const localUrl = `http://127.0.0.1:8000/storage/${video.video_path}`;
+      return localUrl;
     }
     
     return '';
   };
 
-  const getCoverUrl = () => {
+  const getCoverUrl = (): string => {
     if (!video) return '';
+    
+    // Priority order: Cloudinary cover URL > cover_url > constructed local path
+    if (video.cover_cloudinary_url) {
+      return video.cover_cloudinary_url;
+    }
+    
+    if (video.cover_url && video.cover_url.includes('cloudinary')) {
+      return video.cover_url;
+    }
     
     if (video.cover_url) {
       return video.cover_url;
@@ -244,6 +362,115 @@ const VideoWatchPage: React.FC = () => {
     }
     
     return '';
+  };
+
+  // Video control functions
+  const togglePlayPause = () => {
+    if (!videoRef.current) return;
+    
+    if (isPlaying) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play();
+    }
+  };
+
+  const skipForward = () => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.min(
+      videoRef.current.currentTime + 10,
+      videoRef.current.duration
+    );
+  };
+
+  const skipBackward = () => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 10, 0);
+  };
+
+  const adjustVolume = (change: number) => {
+    if (!videoRef.current) return;
+    const newVolume = Math.max(0, Math.min(1, volume + change));
+    setVolume(newVolume);
+    videoRef.current.volume = newVolume;
+    if (newVolume > 0 && isMuted) {
+      setIsMuted(false);
+    }
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    const newMuted = !isMuted;
+    setIsMuted(newMuted);
+    videoRef.current.muted = newMuted;
+  };
+
+  const changePlaybackRate = (rate: number) => {
+    if (!videoRef.current) return;
+    setPlaybackRate(rate);
+    videoRef.current.playbackRate = rate;
+    setShowSettings(false);
+  };
+
+  const seekTo = (percentage: number) => {
+    if (!videoRef.current || !duration) return;
+    const newTime = (percentage / 100) * duration;
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const toggleFullscreen = () => {
+    if (!videoRef.current) return;
+    
+    if (!document.fullscreenElement) {
+      videoRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const downloadVideo = () => {
+    const videoUrl = getVideoUrl();
+    if (videoUrl) {
+      const link = document.createElement('a');
+      link.href = videoUrl;
+      link.download = video?.title || 'video';
+      link.click();
+    }
+  };
+
+  const shareVideo = () => {
+    if (navigator.share && video) {
+      navigator.share({
+        title: video.title,
+        url: window.location.href
+      });
+    } else {
+      // Fallback to copying URL
+      navigator.clipboard.writeText(window.location.href);
+      showModal('Link Copied', 'Video link copied to clipboard!', 'success');
+    }
+  };
+
+  const formatDuration = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes) return '';
+    
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -385,6 +612,8 @@ const VideoWatchPage: React.FC = () => {
   }
 
   const visibleComments = getVisibleComments();
+  const videoUrl = getVideoUrl();
+  const coverUrl = getCoverUrl();
 
   return (
     <>
@@ -398,17 +627,220 @@ const VideoWatchPage: React.FC = () => {
           Back
         </Button>
 
-        {/* Video Player Section */}
+        {/* Enhanced Video Player Section */}
         <Card className="overflow-hidden mb-8">
-          <video
-            ref={videoRef}
-            controls
-            className="w-full aspect-video"
-            src={getVideoUrl()}
-            poster={getCoverUrl()}
-          >
-            Your browser does not support the video tag.
-          </video>
+          {videoError ? (
+            <div className="aspect-video bg-gray-100 flex items-center justify-center">
+              <div className="text-center">
+                <X className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <p className="text-red-600 font-medium">Video Load Error</p>
+                <p className="text-gray-600 text-sm mt-1">{videoError}</p>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  className="mt-4"
+                  size="sm"
+                >
+                  Refresh Page
+                </Button>
+              </div>
+            </div>
+          ) : videoUrl ? (
+            <div className="relative group" 
+                 onMouseMove={resetControlsTimeout}
+                 onMouseEnter={() => setShowControls(true)}>
+              <video
+                ref={videoRef}
+                className="w-full aspect-video bg-black"
+                src={videoUrl}
+                poster={coverUrl}
+                preload="metadata"
+                onClick={togglePlayPause}
+              >
+                <source src={videoUrl} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+              
+              {/* Custom Video Controls */}
+              <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
+                
+                {/* Top Controls */}
+                <div className="absolute top-4 right-4 flex items-center space-x-2">
+                  <button
+                    onClick={shareVideo}
+                    className="p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                    title="Share video"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={downloadVideo}
+                    className="p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                    title="Download video"
+                  >
+                    <Download className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Center Play/Pause Button */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <button
+                    onClick={togglePlayPause}
+                    className="p-4 bg-black/50 hover:bg-black/70 rounded-full text-white transition-all duration-200 hover:scale-110"
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-8 w-8" />
+                    ) : (
+                      <Play className="h-8 w-8 ml-1" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Bottom Controls */}
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  {/* Progress Bar */}
+                  <div className="mb-4">
+                    <div 
+                      className="w-full h-2 bg-white/30 rounded-full cursor-pointer group/progress"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const percentage = ((e.clientX - rect.left) / rect.width) * 100;
+                        seekTo(percentage);
+                      }}
+                    >
+                      <div 
+                        className="h-full bg-blue-500 rounded-full transition-all duration-150 group-hover/progress:bg-blue-400"
+                        style={{ width: `${(currentTime / duration) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Control Buttons */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {/* Skip Backward */}
+                      <button
+                        onClick={skipBackward}
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                        title="Skip backward 10s"
+                      >
+                        <SkipBack className="h-5 w-5" />
+                      </button>
+
+                      {/* Play/Pause */}
+                      <button
+                        onClick={togglePlayPause}
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-5 w-5" />
+                        ) : (
+                          <Play className="h-5 w-5" />
+                        )}
+                      </button>
+
+                      {/* Skip Forward */}
+                      <button
+                        onClick={skipForward}
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                        title="Skip forward 10s"
+                      >
+                        <SkipForward className="h-5 w-5" />
+                      </button>
+
+                      {/* Volume Control */}
+                      <div className="flex items-center space-x-2 group/volume">
+                        <button
+                          onClick={toggleMute}
+                          className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                        >
+                          {isMuted || volume === 0 ? (
+                            <VolumeX className="h-5 w-5" />
+                          ) : (
+                            <Volume2 className="h-5 w-5" />
+                          )}
+                        </button>
+                        <div className="w-20 opacity-0 group-hover/volume:opacity-100 transition-opacity">
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={isMuted ? 0 : volume}
+                            onChange={(e) => {
+                              const newVolume = parseFloat(e.target.value);
+                              setVolume(newVolume);
+                              setIsMuted(newVolume === 0);
+                              if (videoRef.current) {
+                                videoRef.current.volume = newVolume;
+                                videoRef.current.muted = newVolume === 0;
+                              }
+                            }}
+                            className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Time Display */}
+                      <span className="text-white text-sm font-mono">
+                        {formatDuration(currentTime)} / {formatDuration(duration)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      {/* Settings */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowSettings(!showSettings)}
+                          className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                          title="Settings"
+                        >
+                          <Settings className="h-5 w-5" />
+                        </button>
+
+                        {/* Settings Dropdown */}
+                        {showSettings && (
+                          <div className="absolute bottom-full right-0 mb-2 bg-black/90 rounded-lg p-3 min-w-[160px]">
+                            <div className="text-white text-sm font-medium mb-2">Playback Speed</div>
+                            <div className="space-y-1">
+                              {[0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((rate) => (
+                                <button
+                                  key={rate}
+                                  onClick={() => changePlaybackRate(rate)}
+                                  className={`w-full text-left px-3 py-1 rounded text-sm transition-colors ${
+                                    playbackRate === rate 
+                                      ? 'bg-blue-500 text-white' 
+                                      : 'text-gray-300 hover:bg-white/20'
+                                  }`}
+                                >
+                                  {rate === 1 ? 'Normal' : `${rate}x`}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Fullscreen */}
+                      <button
+                        onClick={toggleFullscreen}
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                        title="Fullscreen"
+                      >
+                        <Maximize className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="aspect-video bg-gray-100 flex items-center justify-center">
+              <div className="text-center">
+                <Play className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Video not available</p>
+              </div>
+            </div>
+          )}
           
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -420,9 +852,30 @@ const VideoWatchPage: React.FC = () => {
               )}
             </div>
             
-            <div className="flex items-center text-sm text-gray-500 mb-4">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span>Published on {formatDate(video.created_at)}</span>
+            <div className="flex items-center text-sm text-gray-500 mb-4 space-x-4">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2" />
+                <span>Published on {formatDate(video.created_at)}</span>
+              </div>
+              
+              {video.duration && (
+                <div className="flex items-center">
+                  <span>Duration: {formatDuration(video.duration)}</span>
+                </div>
+              )}
+              
+            </div>
+
+            {/* Keyboard Shortcuts Info */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <h4 className="text-sm font-medium text-gray-900 mb-2">Keyboard Shortcuts</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600">
+                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">Space</kbd> Play/Pause</div>
+                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">←/→</kbd> Skip 10s</div>
+                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">↑/↓</kbd> Volume</div>
+                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">F</kbd> Fullscreen</div>
+                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">M</kbd> Mute</div>
+              </div>
             </div>
             
             {video.description && (

@@ -167,4 +167,54 @@ class ProgressController extends Controller
             ], 500);
         }
     }
+
+
+
+    public function getUserStats($userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+
+            // Calculate total watch time from progress
+            $totalWatchTime = UserVideoProgress::where('user_id', $userId)
+                ->sum('watch_time');
+
+            // Find favorite category
+            $favoriteCategory = Video::select('categories.name')
+                ->join('categories', 'videos.category_id', '=', 'categories.id')
+                ->join('user_video_progress', 'videos.id', '=', 'user_video_progress.video_id')
+                ->where('user_video_progress.user_id', $userId)
+                ->groupBy('categories.name')
+                ->orderByRaw('COUNT(*) DESC')
+                ->value('categories.name');
+
+            // Get last watched video
+            $lastWatched = Video::select('videos.*')
+                ->join('user_video_progress', 'videos.id', '=', 'user_video_progress.video_id')
+                ->where('user_video_progress.user_id', $userId)
+                ->orderBy('user_video_progress.updated_at', 'DESC')
+                ->first();
+
+            // Calculate achievements (simplified example)
+            $achievements = UserVideoProgress::where('user_id', $userId)
+                ->where('completed', true)
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'totalWatchTime' => $totalWatchTime,
+                    'favoriteCategory' => $favoriteCategory,
+                    'lastWatched' => $lastWatched,
+                    'achievements' => $achievements
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch user stats',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

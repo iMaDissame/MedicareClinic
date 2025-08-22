@@ -158,7 +158,6 @@ class VideoController extends Controller
                     'updated_at' => $video->updated_at,
                 ]
             ], 201);
-
         } catch (\Exception $e) {
             // Clean up Cloudinary uploads if database save fails
             if (isset($videoUploadResult['public_id'])) {
@@ -326,7 +325,6 @@ class VideoController extends Controller
                     'file_size' => $video->file_size
                 ]
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -411,7 +409,6 @@ class VideoController extends Controller
             ], 500);
         }
     }
-
     /**
      * Get videos for current user (based on their assigned categories)
      */
@@ -442,9 +439,14 @@ class VideoController extends Controller
                         'title' => $video->title,
                         'description' => $video->description,
                         'video_path' => $video->video_path,
-                        'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
+                        'video_url' => $video->video_url, // Uses accessor - prioritizes Cloudinary
+                        'cloudinary_url' => $video->cloudinary_url,
+                        'cloudinary_public_id' => $video->cloudinary_public_id,
                         'cover_image' => $video->cover_image,
-                        'cover_url' => $video->cover_image ? Storage::url($video->cover_image) : null,
+                        'cover_url' => $video->cover_url, // Uses accessor - prioritizes Cloudinary
+                        'cover_cloudinary_url' => $video->cover_cloudinary_url,
+                        'duration' => $video->duration,
+                        'file_size' => $video->file_size,
                         'is_published' => $video->is_published,
                         'category' => $video->category ? [
                             'id' => $video->category->id,
@@ -527,143 +529,162 @@ class VideoController extends Controller
     }
 
     public function show($id): JsonResponse
-{
-    try {
-        $query = Video::with(['category', 'comments.user']);
+    {
+        try {
+            $query = Video::with(['category', 'comments.user', 'comments.admin']);
 
-        // Check if user is authenticated as admin or regular user
-        $adminUser = auth('admin')->user();
-        $regularUser = auth('api')->user();
-        $isAdmin = $adminUser !== null;
+            // Check if user is authenticated as admin or regular user
+            $adminUser = auth('admin')->user();
+            $regularUser = auth('api')->user();
+            $isAdmin = $adminUser !== null;
 
-        if (!$isAdmin) {
-            // Non-admin users can only see published videos
-            $query->where('is_published', true);
-        }
-        // Admin users can see all videos (published and unpublished)
+            if (!$isAdmin) {
+                // Non-admin users can only see published videos
+                $query->where('is_published', true);
+            }
+            // Admin users can see all videos (published and unpublished)
 
-        $video = $query->findOrFail($id);
+            $video = $query->findOrFail($id);
 
-        // Add full URLs for video and cover image
-        $video->video_url = $video->video_path ? url('storage/' . $video->video_path) : null;
-        $video->cover_url = $video->cover_image ? url('storage/' . $video->cover_image) : null;
+            // Prepare video data with proper URLs (prioritize Cloudinary)
+            $videoData = [
+                'id' => $video->id,
+                'title' => $video->title,
+                'description' => $video->description,
+                'video_path' => $video->video_path,
+                'video_url' => $video->video_url, // This uses the accessor method
+                'cloudinary_url' => $video->cloudinary_url,
+                'cloudinary_public_id' => $video->cloudinary_public_id,
+                'cover_image' => $video->cover_image,
+                'cover_url' => $video->cover_url, // This uses the accessor method
+                'cover_cloudinary_url' => $video->cover_cloudinary_url,
+                'duration' => $video->duration,
+                'file_size' => $video->file_size,
+                'is_published' => $video->is_published,
+                'category' => $video->category ? [
+                    'id' => $video->category->id,
+                    'name' => $video->category->name,
+                ] : null,
+                'created_at' => $video->created_at,
+                'updated_at' => $video->updated_at,
+                'comments' => []
+            ];
 
-        // Filter comments based on user role
-        if (!$isAdmin) {
-            // Non-admin users can only see approved comments and their own comments
-            $video->comments = $video->comments->filter(function ($comment) use ($regularUser) {
-                return $comment->is_approved || ($regularUser && $comment->user_id === $regularUser->id);
-            });
-        }
-        // Admin users can see all comments
+            // Filter comments based on user role
+            if (!$isAdmin) {
+                // Non-admin users can only see approved comments and their own comments
+                $filteredComments = $video->comments->filter(function ($comment) use ($regularUser) {
+                    return $comment->is_approved || ($regularUser && $comment->user_id === $regularUser->id);
+                });
+                $videoData['comments'] = $filteredComments->values();
+            } else {
+                // Admin users can see all comments
+                $videoData['comments'] = $video->comments;
+            }
 
-        return response()->json([
-            'success' => true,
-            'data' => $video,
-            'message' => 'Video retrieved successfully'
-        ]);
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Video not found or not published',
-            'error' => 'Video not found'
-        ], 404);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to retrieve video',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
-
-/**
- * Add a comment to a video
- */
-public function addComment(Request $request, $videoId): JsonResponse
-{
-    try {
-        $validator = Validator::make($request->all(), [
-            'content' => 'required|string|max:1000',
-        ]);
-
-        if ($validator->fails()) {
+            return response()->json([
+                'success' => true,
+                'data' => $videoData,
+                'message' => 'Video retrieved successfully'
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Check if video exists and is published (or if admin, allow unpublished videos too)
-        $adminUser = auth('admin')->user();
-        $regularUser = auth('api')->user();
-
-        if (!$adminUser && !$regularUser) {
+                'message' => 'Video not found or not published',
+                'error' => 'Video not found'
+            ], 404);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Authentication required'
-            ], 401);
+                'message' => 'Failed to retrieve video',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // For admin users, allow commenting on any video (published or not)
-        // For regular users, only allow commenting on published videos
-        if ($adminUser) {
-            $video = Video::findOrFail($videoId);
-        } else {
-            $video = Video::where('is_published', true)->findOrFail($videoId);
-        }
-
-        // Create comment
-        if ($adminUser) {
-            // Admin is commenting - create a special admin comment
-            $comment = Comment::create([
-                'content' => $request->content,
-                'user_id' => null,
-                'admin_id' => $adminUser->id,
-                'video_id' => $videoId,
-                'is_approved' => true // Auto-approve admin comments
-            ]);
-
-            // Manually set the admin relationship for the response
-            $comment->admin = $adminUser;
-            $comment->user = null;
-        } else {
-            // Regular user is commenting
-            $comment = Comment::create([
-                'content' => $request->content,
-                'user_id' => $regularUser->id,
-                'admin_id' => null,
-                'video_id' => $videoId,
-                'is_approved' => false // Regular users need approval
-            ]);
-
-            // Load the user relationship
-            $comment->load('user');
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $comment,
-            'message' => $adminUser
-                ? 'Comment added successfully'
-                : 'Comment submitted for approval'
-        ], 201);
-
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Video not found or not available for comments',
-            'error' => 'Video not found'
-        ], 404);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to add comment',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
+    /**
+     * Add a comment to a video
+     */
+    public function addComment(Request $request, $videoId): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'content' => 'required|string|max:1000',
+            ]);
 
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
+            // Check if video exists and is published (or if admin, allow unpublished videos too)
+            $adminUser = auth('admin')->user();
+            $regularUser = auth('api')->user();
+
+            if (!$adminUser && !$regularUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            // For admin users, allow commenting on any video (published or not)
+            // For regular users, only allow commenting on published videos
+            if ($adminUser) {
+                $video = Video::findOrFail($videoId);
+            } else {
+                $video = Video::where('is_published', true)->findOrFail($videoId);
+            }
+
+            // Create comment
+            if ($adminUser) {
+                // Admin is commenting - create a special admin comment
+                $comment = Comment::create([
+                    'content' => $request->content,
+                    'user_id' => null,
+                    'admin_id' => $adminUser->id,
+                    'video_id' => $videoId,
+                    'is_approved' => true // Auto-approve admin comments
+                ]);
+
+                // Manually set the admin relationship for the response
+                $comment->admin = $adminUser;
+                $comment->user = null;
+            } else {
+                // Regular user is commenting
+                $comment = Comment::create([
+                    'content' => $request->content,
+                    'user_id' => $regularUser->id,
+                    'admin_id' => null,
+                    'video_id' => $videoId,
+                    'is_approved' => false // Regular users need approval
+                ]);
+
+                // Load the user relationship
+                $comment->load('user');
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $comment,
+                'message' => $adminUser
+                    ? 'Comment added successfully'
+                    : 'Comment submitted for approval'
+            ], 201);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Video not found or not available for comments',
+                'error' => 'Video not found'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add comment',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
