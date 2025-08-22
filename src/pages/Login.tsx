@@ -156,7 +156,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   className="w-full text-left bg-blue-50 p-3 rounded-lg hover:bg-blue-100 transition disabled:opacity-50"
                   onClick={() => {
                     setUsername('admin');
-                    setPassword('admin123');
+                    setPassword('123456789');
                   }}
                   disabled={isSubmitting}
                 >
@@ -165,7 +165,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     Username: <code className="bg-blue-100 px-1 rounded">admin</code>
                   </p>
                   <p>
-                    Password: <code className="bg-blue-100 px-1 rounded">admin123</code>
+                    Password: <code className="bg-blue-100 px-1 rounded">123456789</code>
                   </p>
                   <center><span className="text-xs text-blue-700">Click to autofill</span></center>
                 </button>
@@ -173,17 +173,17 @@ const handleSubmit = async (e: React.FormEvent) => {
                   type="button"
                   className="w-full text-left bg-green-50 p-3 rounded-lg hover:bg-green-100 transition disabled:opacity-50"
                   onClick={() => {
-                    setUsername('client');
-                    setPassword('client123');
+                    setUsername('lwa3er');
+                    setPassword('123456789');
                   }}
                   disabled={isSubmitting}
                 >
                   <p className="font-medium text-green-900">Student Access:</p>
                   <p>
-                    Username: <code className="bg-green-100 px-1 rounded">client</code>
+                    Username: <code className="bg-green-100 px-1 rounded">lwa3er</code>
                   </p>
                   <p>
-                    Password: <code className="bg-green-100 px-1 rounded">client123</code>
+                    Password: <code className="bg-green-100 px-1 rounded">123456789</code>
                   </p>
                   <center><span className="text-xs text-green-700">Click to autofill</span></center>
                 </button>

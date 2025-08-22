@@ -5,14 +5,29 @@ namespace App\Http\Controllers;
 use App\Models\Video;
 use App\Models\Comment;
 use App\Models\Category;
+use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class VideoController extends Controller
 {
+    private $cloudinary;
+
+    public function __construct()
+    {
+        $this->cloudinary = new Cloudinary([
+            'cloud' => [
+                'cloud_name' => config('services.cloudinary.cloud_name'),
+                'api_key' => config('services.cloudinary.api_key'),
+                'api_secret' => config('services.cloudinary.api_secret'),
+            ]
+        ]);
+    }
+
     /**
      * Display a listing of videos
      */
@@ -25,9 +40,12 @@ class VideoController extends Controller
                     'title' => $video->title,
                     'description' => $video->description,
                     'video_path' => $video->video_path,
-                    'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
+                    'video_url' => $video->video_url, // Uses the accessor method
                     'cover_image' => $video->cover_image,
-                    'cover_url' => $video->cover_image ? Storage::url($video->cover_image) : null,
+                    'cover_url' => $video->cover_url, // Uses the accessor method
+                    'cloudinary_public_id' => $video->cloudinary_public_id,
+                    'duration' => $video->duration,
+                    'file_size' => $video->file_size,
                     'is_published' => $video->is_published,
                     'category' => $video->category ? [
                         'id' => $video->category->id,
@@ -52,38 +70,19 @@ class VideoController extends Controller
     }
 
     /**
-     * Store a newly created video
+     * Store a newly created video using Cloudinary
      */
     public function store(Request $request): JsonResponse
     {
-        // Increase memory limit and execution time for large uploads
-        ini_set('memory_limit', '1024M');
-        ini_set('max_execution_time', 600); // 10 minutes
-        ini_set('upload_max_filesize', '512M');
-        ini_set('post_max_size', '512M');
 
-        // Check if file was uploaded successfully
-        if (!$request->hasFile('video_file') || !$request->file('video_file')->isValid()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Video file upload failed or file is too large',
-                'error' => 'File upload error - check file size limits'
-            ], 422);
-        }
-
-        if (!$request->hasFile('cover_image') || !$request->file('cover_image')->isValid()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cover image upload failed or file is too large',
-                'error' => 'File upload error - check file size limits'
-            ], 422);
-        }
+        ini_set('memory_limit', '2048M');
+        ini_set('max_execution_time', 600);
 
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'video_file' => 'required|file|mimes:mp4,avi,mov,wmv,webm|max:512000', // 500MB in KB
-            'cover_image' => 'required|file|mimes:jpeg,jpg,png,webp|max:10240', // 10MB in KB
+            'video_file' => 'required|file|mimes:mp4,avi,mov,wmv,webm',
+            'cover_image' => 'required|file|mimes:jpeg,jpg,png,webp|max:10240',
             'category_id' => 'required|exists:categories,id',
             'is_published' => 'boolean',
         ]);
@@ -97,19 +96,41 @@ class VideoController extends Controller
         }
 
         try {
-            // Upload video file
+            // Upload video to Cloudinary
             $videoFile = $request->file('video_file');
-            $videoPath = $videoFile->store('videos', 'public');
+            $videoUploadResult = $this->cloudinary->uploadApi()->upload(
+                $videoFile->getRealPath(),
+                [
+                    'resource_type' => 'video',
+                    'folder' => 'elearning/videos',
+                    'use_filename' => true,
+                    'unique_filename' => true,
+                    'chunk_size' => 6000000, // 6MB chunks for large files
+                ]
+            );
 
-            // Upload cover image
+            // Upload cover image to Cloudinary
             $coverFile = $request->file('cover_image');
-            $coverPath = $coverFile->store('covers', 'public');
+            $coverUploadResult = $this->cloudinary->uploadApi()->upload(
+                $coverFile->getRealPath(),
+                [
+                    'resource_type' => 'image',
+                    'folder' => 'elearning/covers',
+                    'use_filename' => true,
+                    'unique_filename' => true,
+                ]
+            );
 
+            // Create video record
             $video = Video::create([
                 'title' => $request->title,
                 'description' => $request->description,
-                'video_path' => $videoPath,
-                'cover_image' => $coverPath,
+                'cloudinary_public_id' => $videoUploadResult['public_id'],
+                'cloudinary_url' => $videoUploadResult['secure_url'],
+                'cover_cloudinary_id' => $coverUploadResult['public_id'],
+                'cover_cloudinary_url' => $coverUploadResult['secure_url'],
+                'duration' => $videoUploadResult['duration'] ?? null,
+                'file_size' => $videoUploadResult['bytes'] ?? null,
                 'category_id' => $request->category_id,
                 'is_published' => $request->boolean('is_published', false),
             ]);
@@ -118,15 +139,16 @@ class VideoController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Video created successfully',
+                'message' => 'Video uploaded successfully to Cloudinary',
                 'data' => [
                     'id' => $video->id,
                     'title' => $video->title,
                     'description' => $video->description,
-                    'video_path' => $video->video_path,
-                    'video_url' => Storage::url($video->video_path),
-                    'cover_image' => $video->cover_image,
-                    'cover_url' => Storage::url($video->cover_image),
+                    'video_url' => $video->video_url,
+                    'cover_url' => $video->cover_url,
+                    'cloudinary_public_id' => $video->cloudinary_public_id,
+                    'duration' => $video->duration,
+                    'file_size' => $video->file_size,
                     'is_published' => $video->is_published,
                     'category' => $video->category ? [
                         'id' => $video->category->id,
@@ -136,16 +158,34 @@ class VideoController extends Controller
                     'updated_at' => $video->updated_at,
                 ]
             ], 201);
+
         } catch (\Exception $e) {
+            // Clean up Cloudinary uploads if database save fails
+            if (isset($videoUploadResult['public_id'])) {
+                try {
+                    $this->cloudinary->uploadApi()->destroy($videoUploadResult['public_id'], [
+                        'resource_type' => 'video'
+                    ]);
+                } catch (\Exception $cleanupError) {
+                    // Log cleanup error but don't throw
+                }
+            }
+
+            if (isset($coverUploadResult['public_id'])) {
+                try {
+                    $this->cloudinary->uploadApi()->destroy($coverUploadResult['public_id']);
+                } catch (\Exception $cleanupError) {
+                    // Log cleanup error but don't throw
+                }
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create video',
+                'message' => 'Failed to upload video',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
-
-
 
     /**
      * Update the specified video
@@ -155,7 +195,6 @@ class VideoController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'video_path' => 'required|string',
             'category_id' => 'required|exists:categories,id',
             'is_published' => 'boolean',
         ]);
@@ -172,9 +211,8 @@ class VideoController extends Controller
             $video->update([
                 'title' => $request->title,
                 'description' => $request->description,
-                'video_path' => $request->video_path,
                 'category_id' => $request->category_id,
-                'is_published' => $request->is_published ?? $video->is_published,
+                'is_published' => $request->boolean('is_published', $video->is_published),
             ]);
 
             $video->load('category');
@@ -186,10 +224,8 @@ class VideoController extends Controller
                     'id' => $video->id,
                     'title' => $video->title,
                     'description' => $video->description,
-                    'video_path' => $video->video_path,
-                    'video_url' => $video->video_path ? Storage::url($video->video_path) : null,
-                    'cover_image' => $video->cover_image,
-                    'cover_url' => $video->cover_image ? Storage::url($video->cover_image) : null,
+                    'video_url' => $video->video_url,
+                    'cover_url' => $video->cover_url,
                     'is_published' => $video->is_published,
                     'category' => $video->category ? [
                         'id' => $video->category->id,
@@ -214,12 +250,32 @@ class VideoController extends Controller
     public function destroy(Video $video): JsonResponse
     {
         try {
-            // Delete the video file from storage
+            // Delete from Cloudinary if exists
+            if ($video->cloudinary_public_id) {
+                try {
+                    $this->cloudinary->uploadApi()->destroy($video->cloudinary_public_id, [
+                        'resource_type' => 'video'
+                    ]);
+                } catch (\Exception $e) {
+                    // Log error but continue with deletion
+                    Log::warning('Failed to delete video from Cloudinary: ' . $e->getMessage());
+                }
+            }
+
+            if ($video->cover_cloudinary_id) {
+                try {
+                    $this->cloudinary->uploadApi()->destroy($video->cover_cloudinary_id);
+                } catch (\Exception $e) {
+                    // Log error but continue with deletion
+                    Log::warning('Failed to delete cover from Cloudinary: ' . $e->getMessage());
+                }
+            }
+
+            // Delete local files if they exist (backward compatibility)
             if ($video->video_path && Storage::disk('public')->exists($video->video_path)) {
                 Storage::disk('public')->delete($video->video_path);
             }
 
-            // Delete the cover image from storage
             if ($video->cover_image && Storage::disk('public')->exists($video->cover_image)) {
                 Storage::disk('public')->delete($video->cover_image);
             }
@@ -240,8 +296,45 @@ class VideoController extends Controller
     }
 
     /**
-     * Toggle video publish status
+     * Get optimized video URL for streaming
      */
+    public function getOptimizedVideo($id): JsonResponse
+    {
+        try {
+            $video = Video::findOrFail($id);
+
+            if (!$video->cloudinary_public_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Video not available for streaming'
+                ], 404);
+            }
+
+            // Generate optimized streaming URL
+            $streamingUrl = $this->cloudinary->video($video->cloudinary_public_id)
+                ->delivery(\Cloudinary\Transformation\Delivery::quality('auto'))
+                ->delivery(\Cloudinary\Transformation\Delivery::format('auto'))
+                ->toUrl();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'video_id' => $video->id,
+                    'streaming_url' => $streamingUrl,
+                    'original_url' => $video->cloudinary_url,
+                    'duration' => $video->duration,
+                    'file_size' => $video->file_size
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get video streaming URL',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     public function togglePublishStatus(Video $video): JsonResponse
     {
         try {
