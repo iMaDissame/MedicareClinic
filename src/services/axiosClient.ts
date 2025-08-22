@@ -54,5 +54,10 @@ axiosClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+export const getChats = () => axiosClient.get('/chats');
+export const startChat = (adminId: string) => axiosClient.post('/chats/start', { admin_id: adminId });
+export const getChatMessages = (chatId: string) => axiosClient.get(`/chats/${chatId}`);
+export const sendChatMessage = (chatId: string, message: string) =>
+  axiosClient.post(`/chats/${chatId}/messages`, { message });
 
 export default axiosClient;

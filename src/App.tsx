@@ -21,6 +21,10 @@ import UserProgress from './pages/admin/UserProgress';
 import PreviewPortal from './pages/admin/PreviewPortal';
 import AccessExpired from './pages/AccessExpired';
 import Unauthorized from './pages/Unauthorized';
+import AdminChat from './pages/admin/AdminChat'; // Add this import
+import UserChat from './pages/UserChat'; // Add this import
+
+
 
 function App() {
   return (
@@ -53,6 +57,7 @@ function App() {
 
             {/* Video watch page route */}
             <Route path="watch/:id" element={<VideoWatchPage />} />
+            <Route path="chat" element={<UserChat />} /> {/* <-- Add this line */}
           </Route>
 
           {/* Admin Routes - All under /admin prefix */}
@@ -85,6 +90,7 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="progress" element={<UserProgress />} />
             <Route path="preview" element={<PreviewPortal />} />
+            <Route path="chat" element={<AdminChat />} /> {/* <-- Add this line */}
           </Route>
 
           {/* Fallback Routes - Clean up any legacy routes */}

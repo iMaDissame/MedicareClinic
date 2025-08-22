@@ -8,7 +8,8 @@ import {
   Plus,
   Eye,
   X,
-  Tag
+  Tag,
+  MessageCircle
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -26,6 +27,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
     { path: '/admin/categories', icon: Tag, label: 'Categories' },
     { path: '/admin/users', icon: Users, label: 'User Management' },
     { path: '/admin/progress', icon: BarChart3, label: 'User Progress' },
+    { path: '/admin/chat', icon: MessageCircle, label: 'Chat' }, // <-- Add this line
     { path: '/admin/preview', icon: Eye, label: 'Preview Portal' },
   ];
 

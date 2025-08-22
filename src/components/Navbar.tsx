@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, User, Settings, Play, Menu } from 'lucide-react';
 import Button from './ui/Button';
+import { MessageCircle } from 'lucide-react';
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -58,6 +59,14 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                 <Button variant="ghost" size="sm">
                   <Settings className="h-4 w-4 sm:mr-1" />
                   <span className="hidden sm:inline">Admin</span>
+                </Button>
+              </Link>
+            )}
+            {user?.role !== 'admin' && (
+              <Link to="/app/chat">
+                <Button variant="ghost" size="sm">
+                  <MessageCircle className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Chat</span>
                 </Button>
               </Link>
             )}

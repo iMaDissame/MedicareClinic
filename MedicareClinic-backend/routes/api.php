@@ -10,6 +10,7 @@ use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\ChatController;
 
 // User/Student Authentication Routes
 Route::group(['prefix' => 'auth'], function () {
@@ -97,4 +98,12 @@ Route::middleware(['auth:api,admin'])->group(function () {
     Route::patch('comments/{comment}/reject', [CommentController::class, 'reject']);
     Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
     Route::post('/progress', [ProgressController::class, 'store']);
+});
+
+
+Route::middleware(['auth:api,admin'])->group(function () {
+    Route::get('chats', [ChatController::class, 'index']);
+    Route::post('chats/start', [ChatController::class, 'startChat']);
+    Route::get('chats/{chat}', [ChatController::class, 'show']);
+    Route::post('chats/{chat}/messages', [ChatController::class, 'sendMessage']);
 });
