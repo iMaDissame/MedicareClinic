@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Navigate, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Play, AlertCircle, User, Lock, ArrowLeft, Loader2 } from 'lucide-react';
+import { AlertCircle, User, Lock, ArrowLeft, Loader2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -92,13 +92,16 @@ const handleSubmit = async (e: React.FormEvent) => {
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-orange-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full mb-4">
-            <Play className="h-8 w-8 text-white" />
+          <div className="flex justify-center mb-4">
+            <img 
+              src="https://raw.githubusercontent.com/iMaDissame/MedicareClinic/main/MDClogo.png" 
+              alt="Medicare Clinic Logo" 
+              className="h-20 w-auto object-contain"
+            />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-            Medicare Clinic
-          </h1>
-          <p className="text-gray-600 mt-2">Accédez à votre portail d'apprentissage</p>
+          <p className="text-lg font-medium bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+            Accédez à votre portail d'apprentissage
+          </p>
         </div>
 
         <Card className="p-8">
@@ -147,50 +150,6 @@ const handleSubmit = async (e: React.FormEvent) => {
             </Button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              <p className="font-medium mb-3">Identifiants de démonstration :</p>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  className="w-full text-left bg-blue-50 p-3 rounded-lg hover:bg-blue-100 transition disabled:opacity-50"
-                  onClick={() => {
-                    setUsername('admin');
-                    setPassword('123456789');
-                  }}
-                  disabled={isSubmitting}
-                >
-                  <p className="font-medium text-blue-900">Accès Administrateur :</p>
-                  <p>
-                    Nom d'utilisateur : <code className="bg-blue-100 px-1 rounded">admin</code>
-                  </p>
-                  <p>
-                    Mot de passe : <code className="bg-blue-100 px-1 rounded">123456789</code>
-                  </p>
-                  <center><span className="text-xs text-blue-700">Cliquez pour remplir automatiquement</span></center>
-                </button>
-                <button
-                  type="button"
-                  className="w-full text-left bg-green-50 p-3 rounded-lg hover:bg-green-100 transition disabled:opacity-50"
-                  onClick={() => {
-                    setUsername('lwa3er');
-                    setPassword('123456789');
-                  }}
-                  disabled={isSubmitting}
-                >
-                  <p className="font-medium text-green-900">Accès Étudiant :</p>
-                  <p>
-                    Nom d'utilisateur : <code className="bg-green-100 px-1 rounded">lwa3er</code>
-                  </p>
-                  <p>
-                    Mot de passe : <code className="bg-green-100 px-1 rounded">123456789</code>
-                  </p>
-                  <center><span className="text-xs text-green-700">Cliquez pour remplir automatiquement</span></center>
-                </button>
-              </div>
-            </div>
-          </div>
-          
           {/* Return to Landing Page Button */}
           <div className="mt-6 text-center">
             <Link 
