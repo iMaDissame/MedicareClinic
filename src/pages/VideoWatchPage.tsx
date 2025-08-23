@@ -117,6 +117,10 @@ const VideoWatchPage: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [videoLoading, setVideoLoading] = useState(true);
+  
+  // Comment actions state
+  const [commentActions, setCommentActions] = useState<{[key: number]: 'approving' | 'rejecting' | null}>({});
   
   // Modal State
   const [modal, setModal] = useState<{
@@ -158,11 +162,13 @@ const VideoWatchPage: React.FC = () => {
 
     const handleVideoError = () => {
       setVideoError('Failed to load video. Please try refreshing the page.');
+      setVideoLoading(false);
     };
 
     const handleVideoCanPlay = () => {
       setVideoError(null);
       setDuration(videoElement.duration || 0);
+      setVideoLoading(false);
     };
 
     const handlePlay = () => setIsPlaying(true);
@@ -187,9 +193,16 @@ const VideoWatchPage: React.FC = () => {
     };
   }, [video, currentUser]);
 
-  // Handle keyboard shortcuts
+  // Handle keyboard shortcuts - FIXED: Ignore when typing in form fields
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts if user is typing in a form field
+      if (e.target instanceof HTMLInputElement || 
+          e.target instanceof HTMLTextAreaElement ||
+          e.target instanceof HTMLSelectElement) {
+        return;
+      }
+      
       if (!videoRef.current) return;
       
       switch (e.code) {
@@ -228,6 +241,24 @@ const VideoWatchPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
+  // Add touch event handling for mobile play/pause - FIXED: Mobile button functionality
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    const handleVideoTap = (e: TouchEvent) => {
+      e.preventDefault();
+      togglePlayPause();
+    };
+
+    // Add touch event listener to the video element
+    videoElement.addEventListener('touchstart', handleVideoTap, { passive: false });
+
+    return () => {
+      videoElement.removeEventListener('touchstart', handleVideoTap);
+    };
+  }, [isPlaying]);
+
   // Auto-hide controls
   const resetControlsTimeout = () => {
     if (controlsTimeoutRef.current) {
@@ -260,13 +291,23 @@ const VideoWatchPage: React.FC = () => {
   };
 
   const fetchCurrentUser = () => {
-    const adminData = localStorage.getItem('currentAdmin');
     const userData = localStorage.getItem('currentUser');
+    const authType = localStorage.getItem('authType');
     
-    if (adminData) {
-      const admin = JSON.parse(adminData);
-      setCurrentUser({ ...admin, role: 'admin' });
+    console.log('🔍 Auth check:', { userData: !!userData, authType });
+    
+    if (userData && authType) {
+      const user = JSON.parse(userData);
+      
+      if (authType === 'admin') {
+        console.log('👨‍💼 Admin user detected');
+        setCurrentUser({ ...user, role: 'admin' });
+      } else if (authType === 'user') {
+        console.log('👤 Regular user detected');
+        setCurrentUser({ ...user, role: 'student' });
+      }
     } else if (authUser) {
+      // Fallback to auth context
       setCurrentUser({ 
         id: authUser.id,
         name: authUser.name || authUser.username,
@@ -371,7 +412,10 @@ const VideoWatchPage: React.FC = () => {
     if (isPlaying) {
       videoRef.current.pause();
     } else {
-      videoRef.current.play();
+      videoRef.current.play().catch(error => {
+        console.error('Error playing video:', error);
+        setVideoError('Failed to play video. Please try again.');
+      });
     }
   };
 
@@ -423,7 +467,9 @@ const VideoWatchPage: React.FC = () => {
     if (!videoRef.current) return;
     
     if (!document.fullscreenElement) {
-      videoRef.current.requestFullscreen();
+      videoRef.current.requestFullscreen().catch(error => {
+        console.error('Error attempting to enable fullscreen:', error);
+      });
       setIsFullscreen(true);
     } else {
       document.exitFullscreen();
@@ -529,6 +575,70 @@ const VideoWatchPage: React.FC = () => {
     }
   };
 
+  // Approve comment function
+  const handleApproveComment = async (commentId: number) => {
+    try {
+      setCommentActions(prev => ({ ...prev, [commentId]: 'approving' }));
+      
+      const response = await axiosClient.patch(`/comments/${commentId}/approve`);
+      
+      if (response.data && response.data.success) {
+        // Update the comment in the video state
+        setVideo(prev => prev ? {
+          ...prev,
+          comments: prev.comments.map(comment => 
+            comment.id === commentId 
+              ? { ...comment, is_approved: true }
+              : comment
+          )
+        } : null);
+        
+        showModal('Comment Approved', 'The comment has been approved successfully and is now visible to all users.', 'success');
+      } else {
+        showModal('Error', response.data?.message || 'Failed to approve comment', 'error');
+      }
+    } catch (error: any) {
+      console.error('Failed to approve comment:', error);
+      showModal('Error', error.response?.data?.message || 'Failed to approve comment', 'error');
+    } finally {
+      setCommentActions(prev => ({ ...prev, [commentId]: null }));
+    }
+  };
+
+  // Reject comment function
+  const handleRejectComment = async (commentId: number) => {
+    if (!window.confirm('Are you sure you want to reject this comment?')) {
+      return;
+    }
+    
+    try {
+      setCommentActions(prev => ({ ...prev, [commentId]: 'rejecting' }));
+      
+      const response = await axiosClient.patch(`/comments/${commentId}/reject`);
+      
+      if (response.data && response.data.success) {
+        // Update the comment in the video state
+        setVideo(prev => prev ? {
+          ...prev,
+          comments: prev.comments.map(comment => 
+            comment.id === commentId 
+              ? { ...comment, is_approved: false }
+              : comment
+          )
+        } : null);
+        
+        showModal('Comment Rejected', 'The comment has been rejected and is no longer visible to regular users.', 'success');
+      } else {
+        showModal('Error', response.data?.message || 'Failed to reject comment', 'error');
+      }
+    } catch (error: any) {
+      console.error('Failed to reject comment:', error);
+      showModal('Error', error.response?.data?.message || 'Failed to reject comment', 'error');
+    } finally {
+      setCommentActions(prev => ({ ...prev, [commentId]: null }));
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -539,15 +649,34 @@ const VideoWatchPage: React.FC = () => {
     });
   };
 
+  // Updated comment visibility logic
   const getVisibleComments = () => {
     if (!video || !video.comments) return [];
     
-    if (currentUser?.role === 'admin') {
+    const authType = localStorage.getItem('authType');
+    
+    console.log('🔍 Comment visibility check:', {
+      authType,
+      currentUserRole: currentUser?.role,
+      totalComments: video.comments.length
+    });
+    
+    // Direct check against localStorage for more reliability
+    if (authType === 'admin') {
+      console.log('👨‍💼 Admin - showing ALL comments');
       return video.comments;
     } else {
-      return video.comments.filter(comment => 
-        comment.is_approved || (currentUser && comment.user_id === currentUser.id)
+      const filteredComments = video.comments.filter(comment => 
+        comment.is_approved || 
+        (currentUser && comment.user_id === currentUser.id)
       );
+      
+      console.log('👤 User - showing filtered comments:', {
+        total: video.comments.length,
+        visible: filteredComments.length
+      });
+      
+      return filteredComments;
     }
   };
 
@@ -571,9 +700,27 @@ const VideoWatchPage: React.FC = () => {
   };
 
   const canDeleteComment = (comment: Comment) => {
-    if (currentUser?.role === 'admin') return true;
-    if (currentUser && comment.user_id === currentUser.id) return true;
+    const authType = localStorage.getItem('authType');
+    
+    // Admin can delete any comment
+    if (authType === 'admin') {
+      return true;
+    }
+    
+    // Regular user can only delete their own comments
+    if (currentUser && comment.user_id === currentUser.id) {
+      return true;
+    }
+    
     return false;
+  };
+
+  const retryVideoLoad = () => {
+    if (videoRef.current && getVideoUrl()) {
+      videoRef.current.load();
+      setVideoError(null);
+      setVideoLoading(true);
+    }
   };
 
   if (loading) {
@@ -636,18 +783,24 @@ const VideoWatchPage: React.FC = () => {
                 <p className="text-red-600 font-medium">Erreur de chargement de la vidéo</p>
                 <p className="text-gray-600 text-sm mt-1">{videoError}</p>
                 <Button 
-                  onClick={() => window.location.reload()} 
+                  onClick={retryVideoLoad} 
                   className="mt-4"
                   size="sm"
                 >
-                  Rafraîchir la page
+                  Réessayer
                 </Button>
               </div>
             </div>
           ) : videoUrl ? (
             <div className="relative group" 
                  onMouseMove={resetControlsTimeout}
-                 onMouseEnter={() => setShowControls(true)}>
+                 onMouseEnter={() => setShowControls(true)}
+                 onTouchStart={resetControlsTimeout}>
+              {videoLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              )}
               <video
                 ref={videoRef}
                 className="w-full aspect-video bg-black"
@@ -655,6 +808,8 @@ const VideoWatchPage: React.FC = () => {
                 poster={coverUrl}
                 preload="metadata"
                 onClick={togglePlayPause}
+                playsInline
+                controls={false}
               >
                 <source src={videoUrl} type="video/mp4" />
                 Your browser does not support the video tag.
@@ -933,13 +1088,16 @@ const VideoWatchPage: React.FC = () => {
                   const author = getCommentAuthor(comment);
                   const isOwnComment = (currentUser?.role === 'admin' && comment.admin_id === currentUser?.id) || 
                                      (currentUser?.role === 'student' && comment.user_id === currentUser?.id);
+                  const authType = localStorage.getItem('authType');
+                  const isAdmin = authType === 'admin';
+                  const actionLoading = commentActions[comment.id];
                   
                   return (
-                    <div key={comment.id} className="border-b border-gray-100 pb-4 last:border-b-0">
-                      <div className="flex items-start justify-between mb-2">
+                    <div key={comment.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center">
-                          <div className="flex items-center bg-gray-100 rounded-full p-2 mr-3">
-                            <User className="h-3 w-3 text-gray-600" />
+                          <div className="flex items-center bg-white rounded-full p-2 mr-3 shadow-sm">
+                            <User className="h-4 w-4 text-gray-600" />
                           </div>
                           <div>
                             <p className="font-medium text-gray-900 text-sm">
@@ -954,34 +1112,85 @@ const VideoWatchPage: React.FC = () => {
                           </div>
                         </div>
                         
-                        {canDeleteComment(comment) && (
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            className="p-1 hover:bg-red-100 rounded text-red-600"
-                            title="Delete comment"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        )}
+                        <div className="flex items-center space-x-2">
+                          {/* Admin Action Buttons */}
+                          {isAdmin && (
+                            <>
+                              {!comment.is_approved ? (
+                                <button
+                                  onClick={() => handleApproveComment(comment.id)}
+                                  disabled={actionLoading === 'approving'}
+                                  className="flex items-center px-3 py-1 text-xs bg-green-100 hover:bg-green-200 text-green-800 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Approve comment"
+                                >
+                                  {actionLoading === 'approving' ? (
+                                    <div className="w-3 h-3 border border-green-600 border-t-transparent rounded-full animate-spin mr-1" />
+                                  ) : (
+                                    <Check className="h-3 w-3 mr-1" />
+                                  )}
+                                  {actionLoading === 'approving' ? 'Approving...' : 'Approve'}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleRejectComment(comment.id)}
+                                  disabled={actionLoading === 'rejecting'}
+                                  className="flex items-center px-3 py-1 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Reject comment"
+                                >
+                                  {actionLoading === 'rejecting' ? (
+                                    <div className="w-3 h-3 border border-yellow-600 border-t-transparent rounded-full animate-spin mr-1" />
+                                  ) : (
+                                    <X className="h-3 w-3 mr-1" />
+                                  )}
+                                  {actionLoading === 'rejecting' ? 'Rejecting...' : 'Reject'}
+                                </button>
+                              )}
+                            </>
+                          )}
+                          
+                          {/* Delete Button */}
+                          {canDeleteComment(comment) && (
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
+                              title="Delete comment"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       
-                      <p className="text-gray-700 text-sm mb-2">{comment.content}</p>
+                      <p className="text-gray-700 text-sm mb-3 bg-white p-3 rounded border-l-4 border-l-blue-200">
+                        {comment.content}
+                      </p>
                       
-                      <div className="flex items-center space-x-2">
-                        {!comment.is_approved && (
-                          <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                            En attente d'approbation
-                          </span>
-                        )}
-                        {comment.is_approved && (
-                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                            Approuvé
-                          </span>
-                        )}
-                        {isOwnComment && (
-                          <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                            Votre commentaire
-                          </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          {!comment.is_approved ? (
+                            <span className="flex items-center px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                              <div className="w-2 h-2 bg-yellow-400 rounded-full mr-1 animate-pulse"></div>
+                              En attente d'approbation
+                            </span>
+                          ) : (
+                            <span className="flex items-center px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Approuvé
+                            </span>
+                          )}
+                          
+                          {isOwnComment && (
+                            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                              Votre commentaire
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Admin indicator for pending comments */}
+                        {isAdmin && !comment.is_approved && (
+                          <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
+                            Action requise
+                          </div>
                         )}
                       </div>
                     </div>
