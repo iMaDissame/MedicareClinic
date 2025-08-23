@@ -364,19 +364,26 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
               </button>
             )}
 
-            <Link to="#" className="flex items-center space-x-2">
-              <div className="p-2 bg-gradient-to-r from-pink-500 to-rose-500 rounded-lg">
-                <Play className="h-5 w-5 text-white" />
+            <Link
+              to={user?.role === 'admin' ? '/admin/dashboard' : '/app/dashboard'}
+              className="flex items-center space-x-2"
+            >
+              <div className="flex items-center mt-6">
+              <img
+                src="https://imadissame.github.io/MedicareClinic/aa.png"
+                alt="Logo Medicare Clinic"
+                className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2"
+              />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent hidden sm:block">
-                MediCare
-              </span>
+              {/* <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent hidden sm:block">
+              MediCare
+              </span> */}
             </Link>
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4">
             {/* Notification Bell */}
-            <div className="relative" ref={notificationDropdownRef}>
+            <div className="relative flex items-center" ref={notificationDropdownRef}>
               <Button
                 variant="ghost"
                 size="sm"
@@ -391,38 +398,49 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                 )}
               </Button>
 
+              {/* Chat Icon Button */}
+              <Link
+                to={user?.role === 'admin' ? '/admin/chat' : '/app/chat'}
+                className="ml-2"
+                title="Chat"
+              >
+                <Button variant="ghost" size="sm" className="relative">
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              </Link>
+
               {/* Notifications Dropdown */}
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                  <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                    <h3 className="font-semibold text-gray-800">Notifications</h3>
+                <div className="fixed left-1/2 transform -translate-x-1/2 lg:left-auto lg:transform-none lg:right-48 xl:right-8 top-16 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="p-3 sm:p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+                    <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Notifications</h3>
                     {notifications.some(n => !n.is_read) && (
                       <button
                         onClick={handleMarkAllAsRead}
-                        className="text-sm text-blue-600 hover:text-blue-800"
+                        className="text-xs sm:text-sm text-blue-600 hover:text-blue-800"
                       >
                         Mark all read
                       </button>
                     )}
                   </div>
 
-                  <div className="max-h-96 overflow-y-auto">
+                  <div className="max-h-60 sm:max-h-96 overflow-y-auto">
                     {loading ? (
-                      <div className="p-4 text-center text-gray-500">Chargement...</div>
+                      <div className="p-3 sm:p-4 text-center text-gray-500 text-sm">Chargement...</div>
                     ) : notifications.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500">
+                      <div className="p-3 sm:p-4 text-center text-gray-500 text-sm">
                         Aucune notification
                       </div>
                     ) : (
                       notifications.slice(0, 5).map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-4 border-b border-gray-100 hover:bg-gray-50 ${
+                          className={`p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50 ${
                             !notification.is_read ? 'bg-blue-50' : ''
                           }`}
                         >
-                          <div className="flex items-start space-x-3">
-                            <div className="flex-shrink-0">
+                          <div className="flex items-start space-x-2 sm:space-x-3">
+                            <div className="flex-shrink-0 mt-1">
                               {getPriorityIcon(notification.priority)}
                             </div>
 
@@ -432,13 +450,13 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                                 onClick={() => handleMarkAsRead(notification.id)}
                                 className="block hover:no-underline"
                               >
-                                <h4 className="text-sm font-medium text-gray-900 truncate">
+                                <h4 className="text-xs sm:text-sm font-medium text-gray-900 leading-tight">
                                   {notification.title}
                                 </h4>
-                                <p className="text-sm text-gray-600 mt-1">
+                                <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-tight">
                                   {notification.message}
                                 </p>
-                                <p className="text-xs text-gray-400 mt-2">
+                                <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-2">
                                   {new Date(notification.created_at).toLocaleDateString()}
                                 </p>
                               </Link>
@@ -447,10 +465,10 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                             {!notification.is_read && (
                               <button
                                 onClick={() => handleMarkAsRead(notification.id)}
-                                className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                                className="flex-shrink-0 text-gray-400 hover:text-gray-600 p-1"
                                 title="Marquer comme lu"
                               >
-                                <Check className="h-4 w-4" />
+                                <Check className="h-3 w-3 sm:h-4 sm:w-4" />
                               </button>
                             )}
                           </div>
@@ -459,10 +477,10 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                     )}
                   </div>
 
-                  <div className="p-3 border-t border-gray-200 text-center">
+                  <div className="p-2 sm:p-3 border-t border-gray-200 text-center">
                     <button
                       onClick={showFullNotifications}
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                      className="text-xs sm:text-sm text-blue-600 hover:text-blue-800"
                     >
                       View all notifications
                     </button>
