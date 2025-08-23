@@ -20,30 +20,163 @@ class ProgressController extends Controller
         $request->validate([
             'video_id' => 'required|exists:videos,id',
             'progress' => 'required|numeric|min:0|max:100',
-            'user_id' => 'required|exists:users,id'
+            'user_id' => 'required|exists:users,id',
+            'current_time' => 'nullable|numeric|min:0', // Add current time for better tracking
+            'duration' => 'nullable|numeric|min:0'      // Add duration for validation
         ]);
 
         try {
+            // Get the video to validate duration
+            $video = Video::findOrFail($request->video_id);
+
+            // If current_time and duration are provided, recalculate progress
+            $calculatedProgress = $request->progress;
+            if ($request->has('current_time') && $request->has('duration') && $request->duration > 0) {
+                $calculatedProgress = min(100, ($request->current_time / $request->duration) * 100);
+            }
+
+            // Ensure progress never decreases unless explicitly resetting
+            $existingProgress = UserVideoProgress::where([
+                'user_id' => $request->user_id,
+                'video_id' => $request->video_id
+            ])->first();
+
+            // Only update if the new progress is higher or if it's a reset (progress = 0)
+            $finalProgress = $calculatedProgress;
+            if ($existingProgress && $calculatedProgress > 0) {
+                $finalProgress = max($existingProgress->progress, $calculatedProgress);
+            }
+
             $progress = UserVideoProgress::updateOrCreate(
                 [
                     'user_id' => $request->user_id,
                     'video_id' => $request->video_id
                 ],
                 [
-                    'progress' => $request->progress,
-                    'completed' => $request->progress >= 95, // Mark as completed if >95%
+                    'progress' => round($finalProgress, 2),
+                    'current_time' => $request->current_time ?? null,
+                    'total_duration' => $video->duration ?? $request->duration,
+                    'completed' => $finalProgress >= 95, // Mark as completed if >=95%
                     'last_watched_at' => now()
                 ]
             );
 
+            Log::info("Progress updated", [
+                'user_id' => $request->user_id,
+                'video_id' => $request->video_id,
+                'old_progress' => $existingProgress?->progress ?? 0,
+                'new_progress' => $finalProgress,
+                'current_time' => $request->current_time,
+                'duration' => $request->duration
+            ]);
+
             return response()->json([
                 'success' => true,
-                'data' => $progress
+                'data' => $progress,
+                'message' => 'Progress saved successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Progress save error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save progress: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get user's progress for a specific video
+     */
+    public function getUserVideoProgress($userId, $videoId): JsonResponse
+    {
+        try {
+            $progress = UserVideoProgress::where([
+                'user_id' => $userId,
+                'video_id' => $videoId
+            ])->first();
+
+            return response()->json([
+                'success' => true,
+                'data' => $progress ? [
+                    'progress' => (float) $progress->progress,
+                    'current_time' => (float) ($progress->current_time ?? 0),
+                    'completed' => $progress->completed,
+                    'last_watched_at' => $progress->last_watched_at
+                ] : null
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to save progress'
+                'message' => 'Failed to fetch progress'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset all progress for a user (admin only)
+     */
+    public function resetAllUserProgress(Request $request, $userId): JsonResponse
+    {
+        $request->validate([
+            'confirm' => 'required|boolean|accepted'
+        ]);
+
+        try {
+            $deletedCount = UserVideoProgress::where('user_id', $userId)->delete();
+
+            Log::info("Reset all progress for user", [
+                'user_id' => $userId,
+                'deleted_records' => $deletedCount
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "All progress reset successfully. Removed {$deletedCount} records."
+            ]);
+        } catch (\Exception $e) {
+            Log::error('resetAllUserProgress error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reset all progress'
+            ], 500);
+        }
+    }
+
+    /**
+     * Recalculate progress for a user based on current video positions
+     */
+    public function recalculateProgress(Request $request, $userId): JsonResponse
+    {
+        try {
+            $progressRecords = UserVideoProgress::where('user_id', $userId)
+                ->with('video')
+                ->get();
+
+            $updatedCount = 0;
+            foreach ($progressRecords as $progress) {
+                if ($progress->current_time && $progress->total_duration && $progress->total_duration > 0) {
+                    $newProgress = min(100, ($progress->current_time / $progress->total_duration) * 100);
+                    $newCompleted = $newProgress >= 95;
+
+                    if ($progress->progress !== $newProgress || $progress->completed !== $newCompleted) {
+                        $progress->update([
+                            'progress' => round($newProgress, 2),
+                            'completed' => $newCompleted
+                        ]);
+                        $updatedCount++;
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Progress recalculated successfully. Updated {$updatedCount} records."
+            ]);
+        } catch (\Exception $e) {
+            Log::error('recalculateProgress error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to recalculate progress'
             ], 500);
         }
     }
@@ -58,7 +191,7 @@ class ProgressController extends Controller
                 'total_users' => User::count(),
                 'active_users' => User::withValidAccess()->count(),
                 'total_videos' => Video::where('is_published', true)->count(),
-                'total_watch_time' => UserVideoProgress::sum('progress'),
+                'total_watch_time' => UserVideoProgress::sum(DB::raw('(progress / 100) * total_duration')),
                 'average_completion_rate' => UserVideoProgress::avg('progress'),
                 'completed_videos_count' => UserVideoProgress::where('completed', true)->count(),
             ];
@@ -85,17 +218,19 @@ class ProgressController extends Controller
 
             $progress = $user->videoProgress->map(function ($item) {
                 return [
+                    'videoId' => $item->video_id, // Match frontend property name
                     'video_id' => $item->video_id,
                     'video_title' => $item->video->title,
-                    'video_category' => $item->video->category->name,
+                    'video_category' => $item->video->category?->name ?? 'Uncategorized',
                     'progress' => (float) $item->progress,
+                    'current_time' => (float) ($item->current_time ?? 0),
+                    'duration' => (float) ($item->total_duration ?? $item->video->duration ?? 0),
                     'completed' => $item->completed,
                     'last_watched' => $item->last_watched_at,
-                    'duration' => null // You can add duration to videos later
                 ];
             });
 
-            $overallProgress = $user->videoProgress->avg('progress');
+            $overallProgress = $user->videoProgress->avg('progress') ?? 0;
 
             return response()->json([
                 'success' => true,
@@ -106,7 +241,7 @@ class ProgressController extends Controller
                         'email' => $user->email,
                         'username' => $user->username
                     ],
-                    'overall_progress' => $overallProgress,
+                    'overall_progress' => round($overallProgress, 2),
                     'videos_completed' => $user->videoProgress->where('completed', true)->count(),
                     'total_videos_assigned' => $user->categories->sum(function ($category) {
                         return $category->videos()->where('is_published', true)->count();
@@ -115,6 +250,7 @@ class ProgressController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('getUserProgress error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch user progress'
@@ -169,15 +305,15 @@ class ProgressController extends Controller
         }
     }
 
-
     public function getUserStats($userId)
     {
         try {
             $user = User::findOrFail($userId);
 
+            // Calculate total watch time based on actual progress and duration
             $totalWatchTime = UserVideoProgress::where('user_id', $userId)
                 ->join('videos', 'user_video_progress.video_id', '=', 'videos.id')
-                ->sum(DB::raw('(user_video_progress.progress / 100) * COALESCE(videos.duration, 0)'));
+                ->sum(DB::raw('(user_video_progress.progress / 100) * COALESCE(videos.duration, user_video_progress.total_duration, 0)'));
 
             // Find favorite category based on most watched videos
             $favoriteCategory = DB::table('user_video_progress')

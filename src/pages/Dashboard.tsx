@@ -72,20 +72,57 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Enhanced loadUserProgress function for Dashboard.tsx
   const loadUserProgress = async () => {
     try {
       // Load progress from API if available
       const response = await axiosClient.get(`/user-progress/${user?.id}`);
       if (response.data.success) {
-        setProgress(response.data.data.progress_details || []);
+        const apiProgress = response.data.data.progress_details || [];
+        console.log('Progress from API:', apiProgress);
+        setProgress(apiProgress);
+      } else {
+        throw new Error('API response not successful');
       }
     } catch (err: any) {
-      // Fallback to localStorage if API fails
-      const savedProgress = localStorage.getItem(`progress_${user?.id}`);
-      if (savedProgress) {
-        setProgress(JSON.parse(savedProgress));
+      console.warn('Failed to load progress from API, using localStorage fallback:', err);
+      
+      // Enhanced localStorage fallback
+      try {
+        const allProgressData: UserProgress[] = [];
+        
+        // Iterate through all localStorage keys to find progress data
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(`progress_${user?.id}_`)) {
+            const progressStr = localStorage.getItem(key);
+            if (progressStr) {
+              try {
+                const progressData = JSON.parse(progressStr);
+                // Ensure the data has the expected structure
+                if (progressData.videoId || progressData.video_id) {
+                  allProgressData.push({
+                    videoId: progressData.videoId || progressData.video_id?.toString(),
+                    video_id: progressData.video_id || parseInt(progressData.videoId),
+                    progress: parseFloat(progressData.progress) || 0,
+                    current_time: parseFloat(progressData.current_time) || 0,
+                    completed: progressData.completed || progressData.progress >= 95,
+                    last_updated: progressData.last_updated || new Date().toISOString()
+                  });
+                }
+              } catch (parseError) {
+                console.error('Failed to parse progress data:', parseError);
+              }
+            }
+          }
+        }
+        
+        console.log('Progress from localStorage:', allProgressData);
+        setProgress(allProgressData);
+      } catch (localError) {
+        console.error('Failed to load from localStorage:', localError);
+        setProgress([]);
       }
-      console.warn('Failed to load progress from API, using localStorage:', err);
     }
   };
 
@@ -100,9 +137,23 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const getVideoProgress = (videoId: number) => {
-    const progressItem = progress.find(p => p.videoId === videoId.toString() || p.video_id === videoId);
-    return progressItem?.progress || 0;
+  // Enhanced getVideoProgress function
+  const getVideoProgress = (videoId: number): number => {
+    const progressItem = progress.find(p => {
+      // Handle both string and number videoId comparisons
+      const pVideoId = typeof p.videoId === 'string' ? parseInt(p.videoId) : p.videoId;
+      const pVideoIdAlt = typeof p.video_id === 'number' ? p.video_id : parseInt(p.video_id?.toString() || '0');
+      
+      return pVideoId === videoId || pVideoIdAlt === videoId;
+    });
+    
+    if (progressItem) {
+      const progressValue = parseFloat(progressItem.progress?.toString() || '0');
+      console.log(`Progress for video ${videoId}:`, progressValue, progressItem);
+      return Math.max(0, Math.min(100, progressValue)); // Ensure it's between 0-100
+    }
+    
+    return 0;
   };
 
   const getAccessDaysRemaining = () => {
@@ -166,11 +217,24 @@ const Dashboard: React.FC = () => {
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const completedVideos = progress.filter(p => p.completed || p.progress >= 95).length;
-  const inProgressVideos = progress.filter(p => p.progress > 0 && p.progress < 95).length;
-  const notStartedVideos = videos.length - completedVideos - inProgressVideos;
+  // Enhanced progress calculation for statistics
+  const completedVideos = progress.filter(p => {
+    const progressValue = parseFloat(p.progress?.toString() || '0');
+    return p.completed === true || progressValue >= 95;
+  }).length;
+
+  const inProgressVideos = progress.filter(p => {
+    const progressValue = parseFloat(p.progress?.toString() || '0');
+    return progressValue > 0 && progressValue < 95 && !p.completed;
+  }).length;
+
+  const notStartedVideos = Math.max(0, videos.length - completedVideos - inProgressVideos);
+
   const averageProgress = progress.length > 0
-    ? Math.round(progress.reduce((sum, p) => sum + (p.progress || 0), 0) / progress.length)
+    ? Math.round(progress.reduce((sum, p) => {
+        const progressValue = parseFloat(p.progress?.toString() || '0');
+        return sum + progressValue;
+      }, 0) / progress.length)
     : 0;
 
   if (!user) {

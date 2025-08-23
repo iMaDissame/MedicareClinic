@@ -146,18 +146,34 @@ const VideoWatchPage: React.FC = () => {
     const videoElement = videoRef.current;
     if (!videoElement || !currentUser || !video) return;
 
+    let progressSaveTimeout: NodeJS.Timeout | null = null;
+
     const updateProgress = () => {
-      if (videoElement.duration) {
-        const progress = (videoElement.currentTime / videoElement.duration) * 100;
+      if (videoElement.duration && videoElement.duration > 0) {
+        const currentSeconds = videoElement.currentTime;
+        const durationSeconds = videoElement.duration;
+        const progress = (currentSeconds / durationSeconds) * 100;
+        
         setVideoProgress(progress);
-        setCurrentTime(videoElement.currentTime);
-        saveProgress(video.id, progress);
+        setCurrentTime(currentSeconds);
+        
+        // Debounce progress saving to avoid too frequent API calls
+        if (progressSaveTimeout) {
+          clearTimeout(progressSaveTimeout);
+        }
+        
+        progressSaveTimeout = setTimeout(() => {
+          saveProgress(video.id, currentSeconds, durationSeconds);
+        }, 2000); // Save progress every 2 seconds of watching
       }
     };
 
     const handleVideoEnd = () => {
-      saveProgress(video.id, 100);
-      setIsPlaying(false);
+      if (videoElement.duration && videoElement.duration > 0) {
+        // Mark as completed when video ends
+        saveProgress(video.id, videoElement.duration, videoElement.duration);
+        setIsPlaying(false);
+      }
     };
 
     const handleVideoError = () => {
@@ -167,13 +183,50 @@ const VideoWatchPage: React.FC = () => {
 
     const handleVideoCanPlay = () => {
       setVideoError(null);
-      setDuration(videoElement.duration || 0);
+      const videoDuration = videoElement.duration || 0;
+      setDuration(videoDuration);
       setVideoLoading(false);
+      
+      // Load saved progress and seek to last position if exists
+      loadSavedProgress();
+    };
+
+    const loadSavedProgress = async () => {
+      try {
+        // Try to load from backend first
+        const response = await axiosClient.get(`/user-progress/${currentUser.id}/${video.id}`);
+        if (response.data.success && response.data.data) {
+          const savedProgress = response.data.data;
+          if (savedProgress.current_time && savedProgress.current_time > 30) {
+            // Only seek if more than 30 seconds into the video
+            videoElement.currentTime = savedProgress.current_time;
+            setCurrentTime(savedProgress.current_time);
+            setVideoProgress(savedProgress.progress);
+          }
+        }
+      } catch (error) {
+        // Fallback to localStorage
+        try {
+          const progressKey = `progress_${currentUser.id}_${video.id}`;
+          const savedProgressStr = localStorage.getItem(progressKey);
+          if (savedProgressStr) {
+            const savedProgress = JSON.parse(savedProgressStr);
+            if (savedProgress.current_time && savedProgress.current_time > 30) {
+              videoElement.currentTime = savedProgress.current_time;
+              setCurrentTime(savedProgress.current_time);
+              setVideoProgress(savedProgress.progress);
+            }
+          }
+        } catch (localError) {
+          console.error('Failed to load progress from localStorage:', localError);
+        }
+      }
     };
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
 
+    // Add event listeners
     videoElement.addEventListener('timeupdate', updateProgress);
     videoElement.addEventListener('ended', handleVideoEnd);
     videoElement.addEventListener('error', handleVideoError);
@@ -183,6 +236,9 @@ const VideoWatchPage: React.FC = () => {
     videoElement.addEventListener('loadedmetadata', handleVideoCanPlay);
 
     return () => {
+      if (progressSaveTimeout) {
+        clearTimeout(progressSaveTimeout);
+      }
       videoElement.removeEventListener('timeupdate', updateProgress);
       videoElement.removeEventListener('ended', handleVideoEnd);
       videoElement.removeEventListener('error', handleVideoError);
@@ -339,24 +395,70 @@ const VideoWatchPage: React.FC = () => {
     }
   };
 
-  const saveProgress = async (videoId: number, progress: number) => {
-    try {
-      if (!currentUser) return;
+// Improved saveProgress function
+const saveProgress = async (videoId: number, currentTimeSeconds: number, durationSeconds: number) => {
+  try {
+    if (!currentUser || !durationSeconds || durationSeconds <= 0) return;
 
-      // Save locally
+    // Calculate progress percentage
+    const progressPercentage = Math.min(100, Math.max(0, (currentTimeSeconds / durationSeconds) * 100));
+    
+    // Don't save progress if it's less than 1% (to avoid saving accidental clicks)
+    if (progressPercentage < 1) return;
+
+    console.log('Saving progress:', {
+      videoId,
+      currentTime: currentTimeSeconds,
+      duration: durationSeconds,
+      progress: progressPercentage,
+      userId: currentUser.id
+    });
+
+    // Save to backend
+    const response = await axiosClient.post('/progress', {
+      video_id: videoId,
+      user_id: currentUser.id,
+      progress: progressPercentage,
+      current_time: currentTimeSeconds,
+      duration: durationSeconds
+    });
+
+    if (response.data.success) {
+      // Update local storage as backup
       const progressKey = `progress_${currentUser.id}_${videoId}`;
-      localStorage.setItem(progressKey, progress.toString());
-      
-      // Save to backend
-      await axiosClient.post('/progress', {
+      const progressData = {
+        videoId: videoId.toString(),
         video_id: videoId,
-        progress: progress,
-        user_id: currentUser.id
-      });
-    } catch (error) {
-      console.error('Failed to save progress:', error);
+        progress: progressPercentage,
+        current_time: currentTimeSeconds,
+        duration: durationSeconds,
+        completed: progressPercentage >= 95,
+        last_updated: new Date().toISOString()
+      };
+      localStorage.setItem(progressKey, JSON.stringify(progressData));
     }
-  };
+  } catch (error) {
+    console.error('Failed to save progress:', error);
+    
+    // Fallback: save to localStorage even if backend fails
+    try {
+      const progressPercentage = Math.min(100, Math.max(0, (currentTimeSeconds / durationSeconds) * 100));
+      const progressKey = `progress_${currentUser.id}_${videoId}`;
+      const progressData = {
+        videoId: videoId.toString(),
+        video_id: videoId,
+        progress: progressPercentage,
+        current_time: currentTimeSeconds,
+        duration: durationSeconds,
+        completed: progressPercentage >= 95,
+        last_updated: new Date().toISOString()
+      };
+      localStorage.setItem(progressKey, JSON.stringify(progressData));
+    } catch (localError) {
+      console.error('Failed to save to localStorage:', localError);
+    }
+  }
+};
 
   const getVideoUrl = (): string => {
     if (!video) return '';
@@ -461,6 +563,11 @@ const VideoWatchPage: React.FC = () => {
     const newTime = (percentage / 100) * duration;
     videoRef.current.currentTime = newTime;
     setCurrentTime(newTime);
+    
+    // Save progress when user seeks
+    if (currentUser && video) {
+      saveProgress(video.id, newTime, duration);
+    }
   };
 
   const toggleFullscreen = () => {

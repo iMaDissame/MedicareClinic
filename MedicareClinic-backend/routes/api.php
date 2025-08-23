@@ -49,8 +49,14 @@ Route::group(['prefix' => 'admin'], function () {
     // Admin Protected Routes
     Route::middleware('auth:admin')->group(function () {
         // Dashboard stats
+        Route::delete('user-progress/{user}/reset-all', [ProgressController::class, 'resetAllUserProgress']);
+        Route::delete('user-progress/{user}/{video}/reset', [ProgressController::class, 'resetUserVideoProgress']);
+        Route::post('user-progress/{user}/recalculate', [ProgressController::class, 'recalculateProgress']);
         Route::get('dashboard/stats', [DashboardController::class, 'stats']);
-
+        Route::get('/progress/statistics', [ProgressController::class, 'statistics'])->name('admin.progress.statistics');
+        Route::get('/progress/all-users', [ProgressController::class, 'getAllUsersProgress'])->name('admin.progress.all.users');
+        Route::get('/progress/users', [ProgressController::class, 'getAllUsersProgress'])->name('admin.progress.users'); // Alternative route
+        Route::get('/progress/users/{userId}', [ProgressController::class, 'getUserProgress'])->name('admin.progress.user.details');
         // Admin User Management Routes
         Route::get('users/statistics', [UserManagementController::class, 'statistics']);
         Route::get('users', [UserManagementController::class, 'index']);
