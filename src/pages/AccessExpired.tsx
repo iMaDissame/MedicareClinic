@@ -19,24 +19,24 @@ const AccessExpired: React.FC = () => {
           <AlertTriangle className="h-8 w-8 text-red-600" />
         </div>
         
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Expired</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Accès expiré</h1>
         
         <div className="flex items-center justify-center space-x-2 text-gray-600 mb-6">
           <Clock className="h-5 w-5" />
-          <span>Your learning access has expired</span>
+          <span>Votre accès d'apprentissage a expiré</span>
         </div>
         
         <p className="text-gray-600 mb-8">
-          Your access to the course content has expired. Please contact your administrator to renew your access or extend your subscription.
+          Votre accès au contenu du cours a expiré. Veuillez contacter votre administrateur pour renouveler votre accès ou prolonger votre abonnement.
         </p>
         
         <div className="space-y-4">
           <Button onClick={handleLogout} className="w-full">
-            Return to Login
+            Retour à la connexion
           </Button>
           
           <div className="text-sm text-gray-500">
-            <p>Need help? Contact your administrator</p>
+            <p>Besoin d'aide ? Contactez votre administrateur</p>
           </div>
         </div>
       </Card>

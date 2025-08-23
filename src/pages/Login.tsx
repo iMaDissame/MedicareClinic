@@ -98,7 +98,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
             Medicare Clinic
           </h1>
-          <p className="text-gray-600 mt-2">Access your learning portal</p>
+          <p className="text-gray-600 mt-2">Accédez à votre portail d'apprentissage</p>
         </div>
 
         <Card className="p-8">
@@ -109,7 +109,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="Entrez votre nom d'utilisateur"
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
                 disabled={isSubmitting}
@@ -122,7 +122,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder="Entrez votre mot de passe"
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
                 disabled={isSubmitting}
@@ -149,7 +149,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="text-sm text-gray-600">
-              <p className="font-medium mb-3">Demo Credentials:</p>
+              <p className="font-medium mb-3">Identifiants de démonstration :</p>
               <div className="space-y-2">
                 <button
                   type="button"
@@ -160,14 +160,14 @@ const handleSubmit = async (e: React.FormEvent) => {
                   }}
                   disabled={isSubmitting}
                 >
-                  <p className="font-medium text-blue-900">Admin Access:</p>
+                  <p className="font-medium text-blue-900">Accès Administrateur :</p>
                   <p>
-                    Username: <code className="bg-blue-100 px-1 rounded">admin</code>
+                    Nom d'utilisateur : <code className="bg-blue-100 px-1 rounded">admin</code>
                   </p>
                   <p>
-                    Password: <code className="bg-blue-100 px-1 rounded">123456789</code>
+                    Mot de passe : <code className="bg-blue-100 px-1 rounded">123456789</code>
                   </p>
-                  <center><span className="text-xs text-blue-700">Click to autofill</span></center>
+                  <center><span className="text-xs text-blue-700">Cliquez pour remplir automatiquement</span></center>
                 </button>
                 <button
                   type="button"
@@ -178,14 +178,14 @@ const handleSubmit = async (e: React.FormEvent) => {
                   }}
                   disabled={isSubmitting}
                 >
-                  <p className="font-medium text-green-900">Student Access:</p>
+                  <p className="font-medium text-green-900">Accès Étudiant :</p>
                   <p>
-                    Username: <code className="bg-green-100 px-1 rounded">lwa3er</code>
+                    Nom d'utilisateur : <code className="bg-green-100 px-1 rounded">lwa3er</code>
                   </p>
                   <p>
-                    Password: <code className="bg-green-100 px-1 rounded">123456789</code>
+                    Mot de passe : <code className="bg-green-100 px-1 rounded">123456789</code>
                   </p>
-                  <center><span className="text-xs text-green-700">Click to autofill</span></center>
+                  <center><span className="text-xs text-green-700">Cliquez pour remplir automatiquement</span></center>
                 </button>
               </div>
             </div>
@@ -198,7 +198,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               className="flex items-center justify-center gap-2 text-pink-600 hover:text-pink-700 font-medium"
             >
               <ArrowLeft className="h-4 w-4" />
-              Return to Home Page
+              Retour à la page d'accueil
             </Link>
           </div>
         </Card>

@@ -59,7 +59,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             variant="secondary" 
             className="flex-1"
           >
-            Cancel
+            Annuler
           </Button>
           <Button 
             onClick={onConfirm} 
@@ -224,13 +224,13 @@ const VideoManagement: React.FC = () => {
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Video Management</h1>
-            <p className="text-gray-600 mt-2">Manage your course videos and publishing status</p>
+            <h1 className="text-3xl font-bold text-gray-900">Gestion des vidéos</h1>
+            <p className="text-gray-600 mt-2">Gérez vos vidéos de cours et leur statut de publication</p>
           </div>
           <Link to="/admin/videos/new">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Add New Video
+              Ajouter une nouvelle vidéo
             </Button>
           </Link>
         </div>
@@ -238,7 +238,7 @@ const VideoManagement: React.FC = () => {
           <div className="flex items-center">
             <AlertCircle className="h-6 w-6 text-red-500 mr-3" />
             <div>
-              <h3 className="font-semibold text-red-900">Error Loading Videos</h3>
+              <h3 className="font-semibold text-red-900">Erreur lors du chargement des vidéos</h3>
               <p className="text-red-700 text-sm mt-1">{error}</p>
             </div>
           </div>
@@ -247,7 +247,7 @@ const VideoManagement: React.FC = () => {
             variant="secondary" 
             className="mt-4"
           >
-            Try Again
+            Réessayer
           </Button>
         </Card>
       </div>
@@ -259,12 +259,12 @@ const VideoManagement: React.FC = () => {
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Video Management</h1>
-            <p className="text-gray-600 mt-2">Loading videos...</p>
+            <h1 className="text-3xl font-bold text-gray-900">Gestion des vidéos</h1>
+            <p className="text-gray-600 mt-2">Chargement des vidéos...</p>
           </div>
         </div>
         <div className="flex justify-center items-center h-64">
-          <div className="text-gray-600">Loading videos...</div>
+          <div className="text-gray-600">Chargement des vidéos...</div>
         </div>
       </div>
     );
@@ -277,13 +277,13 @@ const VideoManagement: React.FC = () => {
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Video Management</h1>
-          <p className="text-gray-600 mt-2">Manage your course videos and publishing status</p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestion des vidéos</h1>
+          <p className="text-gray-600 mt-2">Gérez vos vidéos de cours et leur statut de publication</p>
         </div>
         <Link to="/admin/videos/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Add New Video
+            Ajouter une nouvelle vidéo
           </Button>
         </Link>
       </div>
@@ -295,7 +295,7 @@ const VideoManagement: React.FC = () => {
               <Video className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Videos</p>
+              <p className="text-sm font-medium text-gray-600">Vidéos totales</p>
               <p className="text-2xl font-bold text-gray-900">{videos.length}</p>
             </div>
           </div>
@@ -307,7 +307,7 @@ const VideoManagement: React.FC = () => {
               <Eye className="h-6 w-6 text-green-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Published</p>
+              <p className="text-sm font-medium text-gray-600">Publiées</p>
               <p className="text-2xl font-bold text-gray-900">{publishedVideos.length}</p>
             </div>
           </div>
@@ -319,7 +319,7 @@ const VideoManagement: React.FC = () => {
               <EyeOff className="h-6 w-6 text-yellow-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Drafts</p>
+              <p className="text-sm font-medium text-gray-600">Brouillons</p>
               <p className="text-2xl font-bold text-gray-900">{unpublishedVideos.length}</p>
             </div>
           </div>
@@ -329,7 +329,7 @@ const VideoManagement: React.FC = () => {
       {/* Published Videos */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Published Videos ({publishedVideos.length})
+          Vidéos publiées ({publishedVideos.length})
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {publishedVideos.map((video) => (
@@ -348,9 +348,9 @@ const VideoManagement: React.FC = () => {
           {publishedVideos.length === 0 && (
             <div className="col-span-full text-center py-12">
               <Eye className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Published Videos</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune vidéo publiée</h3>
               <p className="text-gray-600 mb-4">
-                Your published videos will appear here when you publish them.
+                Vos vidéos publiées apparaîtront ici lorsque vous les publierez.
               </p>
             </div>
           )}
@@ -360,7 +360,7 @@ const VideoManagement: React.FC = () => {
       {/* Draft Videos */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Draft Videos ({unpublishedVideos.length})
+          Vidéos brouillon ({unpublishedVideos.length})
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {unpublishedVideos.map((video) => (
@@ -379,9 +379,9 @@ const VideoManagement: React.FC = () => {
           {unpublishedVideos.length === 0 && (
             <div className="col-span-full text-center py-12">
               <EyeOff className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Draft Videos</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune vidéo brouillon</h3>
               <p className="text-gray-600 mb-4">
-                Your draft videos will appear here before you publish them.
+                Vos vidéos brouillon apparaîtront ici avant que vous ne les publiiez.
               </p>
             </div>
           )}
@@ -392,14 +392,14 @@ const VideoManagement: React.FC = () => {
       {videos.length === 0 && !loading && (
         <Card className="p-12 text-center">
           <Video className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Videos Yet</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Aucune vidéo pour le moment</h3>
           <p className="text-gray-600 mb-6">
-            Get started by creating your first course video.
+            Commencez par créer votre première vidéo de cours.
           </p>
           <Link to="/admin/videos/new">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create Your First Video
+              Créer votre première vidéo
             </Button>
           </Link>
         </Card>
@@ -479,7 +479,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
               ? 'bg-green-100 text-green-800' 
               : 'bg-yellow-100 text-yellow-800'
           }`}>
-            {video.is_published ? 'Published' : 'Draft'}
+            {video.is_published ? 'Publiée' : 'Brouillon'}
           </span>
         </div>
         {video.category && (
@@ -495,13 +495,13 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
           {video.title}
         </h3>
         <p className="text-sm text-gray-600 mb-3 line-clamp-2" title={video.description}>
-          {video.description || 'No description provided'}
+          {video.description || 'Aucune description fournie'}
         </p>
         
         <div className="flex items-center text-xs text-gray-500 mb-4">
           <Calendar className="h-3 w-3 mr-1" />
           <span>
-            Created {formatDate(video.created_at)}
+            Créée le {formatDate(video.created_at)}
           </span>
         </div>
 
@@ -517,21 +517,21 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
             {video.is_published ? (
               <>
                 <EyeOff className="h-3 w-3 mr-1" />
-                Unpublish
+                Dépublier
               </>
             ) : (
               <>
                 <Eye className="h-3 w-3 mr-1" />
-                Publish
+                Publier
               </>
             )}
           </Button>
           
           {/* Edit button */}
           <Link to={`/admin/videos/edit/${video.id}`} className="col-span-1">
-            <Button size="sm" variant="ghost" className="w-full" title="Edit video">
+            <Button size="sm" variant="ghost" className="w-full" title="Modifier la vidéo">
               <Edit className="h-3 w-3 mr-1" />
-              Edit
+              Modifier
             </Button>
           </Link>
           
@@ -540,11 +540,11 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
             size="sm"
             variant="danger"
             onClick={() => onDelete(video.id, video.title)}
-            title="Delete video"
+            title="Supprimer la vidéo"
             className="col-span-2"
           >
             <Trash2 className="h-3 w-3 mr-1" />
-            Delete
+            Supprimer
           </Button>
         </div>
       </div>

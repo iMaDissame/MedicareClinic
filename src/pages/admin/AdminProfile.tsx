@@ -68,7 +68,7 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, message })
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <div className="text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Success!</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Succès !</h3>
           <p className="text-gray-600 mb-6">{message}</p>
           <Button onClick={onClose} className="w-full">
             OK
@@ -87,10 +87,10 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <div className="text-center">
           <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur</h3>
           <p className="text-red-600 mb-6">{error}</p>
           <Button onClick={onClose} variant="secondary" className="w-full">
-            Close
+            Fermer
           </Button>
         </div>
       </div>
@@ -279,8 +279,8 @@ const AdminProfile: React.FC = () => {
           <User className="h-6 w-6 text-blue-600" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Profile</h1>
-          <p className="text-gray-600 mt-1">Manage your account settings and view dashboard statistics</p>
+          <h1 className="text-3xl font-bold text-gray-900">Profil Administrateur</h1>
+          <p className="text-gray-600 mt-1">Gérez les paramètres de votre compte et consultez les statistiques du tableau de bord</p>
         </div>
       </div>
 
@@ -288,11 +288,11 @@ const AdminProfile: React.FC = () => {
       <Card className="p-0">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
-            {[
-              { id: 'profile', label: 'Profile Information', icon: User },
-              { id: 'password', label: 'Change Password', icon: Shield },
-              { id: 'statistics', label: 'Dashboard Stats', icon: BarChart3 },
-              { id: 'activity', label: 'Recent Activity', icon: Activity }
+            {[ 
+              { id: 'profile', label: 'Informations du profil', icon: User },
+              { id: 'password', label: 'Changer le mot de passe', icon: Shield },
+              { id: 'statistics', label: 'Statistiques du tableau de bord', icon: BarChart3 },
+              { id: 'activity', label: 'Activité récente', icon: Activity }
             ].map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -317,11 +317,11 @@ const AdminProfile: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Input
-                    label="Full Name"
+                    label="Nom complet"
                     name="name"
                     value={profileForm.name}
                     onChange={handleProfileInputChange}
-                    placeholder="Enter your full name"
+                    placeholder="Entrez votre nom complet"
                     required
                   />
                   {profileErrors.name && (
@@ -331,11 +331,11 @@ const AdminProfile: React.FC = () => {
 
                 <div>
                   <Input
-                    label="Username"
+                    label="Nom d'utilisateur"
                     name="username"
                     value={profileForm.username}
                     onChange={handleProfileInputChange}
-                    placeholder="Enter your username"
+                    placeholder="Entrez votre nom d'utilisateur"
                     required
                   />
                   {profileErrors.username && (
@@ -346,12 +346,12 @@ const AdminProfile: React.FC = () => {
 
               <div>
                 <Input
-                  label="Email Address"
+                  label="Adresse e-mail"
                   name="email"
                   type="email"
                   value={profileForm.email}
                   onChange={handleProfileInputChange}
-                  placeholder="Enter your email address"
+                  placeholder="Entrez votre adresse e-mail"
                   required
                 />
                 {profileErrors.email && (
@@ -363,7 +363,7 @@ const AdminProfile: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 rounded-lg">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Account Created
+                      Compte créé
                     </label>
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Calendar className="h-4 w-4" />
@@ -372,7 +372,7 @@ const AdminProfile: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Updated
+                      Dernière modification
                     </label>
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Calendar className="h-4 w-4" />
@@ -385,7 +385,7 @@ const AdminProfile: React.FC = () => {
               <div className="flex space-x-4">
                 <Button type="submit" disabled={loading} className="flex-1">
                   <Save className="h-4 w-4 mr-2" />
-                  {loading ? 'Updating...' : 'Update Profile'}
+                  {loading ? 'Mise à jour...' : 'Mettre à jour le profil'}
                 </Button>
               </div>
             </form>
@@ -398,9 +398,9 @@ const AdminProfile: React.FC = () => {
                 <div className="flex">
                   <AlertCircle className="h-5 w-5 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="text-sm font-medium text-yellow-800">Password Security</h3>
+                    <h3 className="text-sm font-medium text-yellow-800">Sécurité du mot de passe</h3>
                     <p className="mt-1 text-sm text-yellow-700">
-                      Choose a strong password with at least 8 characters, including uppercase and lowercase letters, numbers, and special characters.
+                      Choisissez un mot de passe fort d'au moins 8 caractères, comprenant des majuscules, des minuscules, des chiffres et des caractères spéciaux.
                     </p>
                   </div>
                 </div>
@@ -408,7 +408,7 @@ const AdminProfile: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Password
+                  Mot de passe actuel
                 </label>
                 <div className="relative">
                   <input
@@ -417,7 +417,7 @@ const AdminProfile: React.FC = () => {
                     value={passwordForm.current_password}
                     onChange={handlePasswordInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    placeholder="Enter current password"
+                    placeholder="Entrez le mot de passe actuel"
                     required
                   />
                   <button
@@ -439,7 +439,7 @@ const AdminProfile: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  New Password
+                  Nouveau mot de passe
                 </label>
                 <div className="relative">
                   <input
@@ -448,7 +448,7 @@ const AdminProfile: React.FC = () => {
                     value={passwordForm.new_password}
                     onChange={handlePasswordInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    placeholder="Enter new password"
+                    placeholder="Entrez le nouveau mot de passe"
                     required
                   />
                   <button
@@ -470,7 +470,7 @@ const AdminProfile: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm New Password
+                  Confirmer le nouveau mot de passe
                 </label>
                 <div className="relative">
                   <input
@@ -479,7 +479,7 @@ const AdminProfile: React.FC = () => {
                     value={passwordForm.new_password_confirmation}
                     onChange={handlePasswordInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                    placeholder="Confirm new password"
+                    placeholder="Confirmez le nouveau mot de passe"
                     required
                   />
                   <button
@@ -502,7 +502,7 @@ const AdminProfile: React.FC = () => {
               <div className="flex space-x-4">
                 <Button type="submit" disabled={loading} className="flex-1">
                   <Shield className="h-4 w-4 mr-2" />
-                  {loading ? 'Updating...' : 'Update Password'}
+                  {loading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
                 </Button>
               </div>
             </form>
@@ -513,14 +513,14 @@ const AdminProfile: React.FC = () => {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {statistics && [
-                  { label: 'Total Users', value: statistics.total_users, icon: UserCheck, color: 'blue' },
-                  { label: 'Active Users', value: statistics.active_users, icon: User, color: 'green' },
-                  { label: 'Total Videos', value: statistics.total_videos, icon: Activity, color: 'purple' },
-                  { label: 'Published Videos', value: statistics.published_videos, icon: CheckCircle, color: 'indigo' },
-                  { label: 'Categories', value: statistics.total_categories, icon: Settings, color: 'yellow' },
-                  { label: 'Comments', value: statistics.total_comments, icon: Mail, color: 'pink' },
-                  { label: 'Pending Comments', value: statistics.pending_comments, icon: AlertCircle, color: 'red' },
-                  { label: 'Your Notifications', value: statistics.admin_notifications, icon: Activity, color: 'gray' }
+                  { label: 'Utilisateurs totaux', value: statistics.total_users, icon: UserCheck, color: 'blue' },
+                  { label: 'Utilisateurs actifs', value: statistics.active_users, icon: User, color: 'green' },
+                  { label: 'Vidéos totales', value: statistics.total_videos, icon: Activity, color: 'purple' },
+                  { label: 'Vidéos publiées', value: statistics.published_videos, icon: CheckCircle, color: 'indigo' },
+                  { label: 'Catégories', value: statistics.total_categories, icon: Settings, color: 'yellow' },
+                  { label: 'Commentaires', value: statistics.total_comments, icon: Mail, color: 'pink' },
+                  { label: 'Commentaires en attente', value: statistics.pending_comments, icon: AlertCircle, color: 'red' },
+                  { label: 'Vos notifications', value: statistics.admin_notifications, icon: Activity, color: 'gray' }
                 ].map(({ label, value, icon: Icon, color }) => (
                   <Card key={label} className="p-6">
                     <div className="flex items-center">
@@ -542,16 +542,16 @@ const AdminProfile: React.FC = () => {
           {activeTab === 'activity' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">Recent System Activity</h3>
+                <h3 className="text-lg font-medium text-gray-900">Activité système récente</h3>
                 <Button variant="outline" onClick={fetchActivities} size="sm">
-                  Refresh
+                  Actualiser
                 </Button>
               </div>
 
               {activities.length === 0 ? (
                 <div className="text-center py-12">
                   <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No recent activity found</p>
+                  <p className="text-gray-500">Aucune activité récente trouvée</p>
                 </div>
               ) : (
                 <div className="space-y-4">

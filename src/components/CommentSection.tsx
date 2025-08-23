@@ -52,10 +52,10 @@ const CommentSection: React.FC<CommentSectionProps> = ({ courseId }) => {
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
+    if (days > 0) return `il y a ${days}j`;
+    if (hours > 0) return `il y a ${hours}h`;
+    if (minutes > 0) return `il y a ${minutes}min`;
+    return 'À l\'instant';
   };
 
   return (
@@ -79,7 +79,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ courseId }) => {
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Share your thoughts about this course..."
+              placeholder="Partagez vos idées sur ce cours..."
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
@@ -90,7 +90,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ courseId }) => {
                 disabled={!newComment.trim()}
               >
                 <Send className="h-3 w-3 mr-1" />
-                Post Comment
+                Publier un commentaire
               </Button>
             </div>
           </div>
@@ -102,7 +102,7 @@ const CommentSection: React.FC<CommentSectionProps> = ({ courseId }) => {
         {comments.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>No comments yet. Be the first to share your thoughts!</p>
+            <p>Aucun commentaire pour le moment. Soyez le premier à partager vos idées !</p>
           </div>
         ) : (
           comments.map((comment) => (

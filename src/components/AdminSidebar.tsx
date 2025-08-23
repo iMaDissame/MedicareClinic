@@ -21,14 +21,14 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
 
   const menuItems = [
-    { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-    { path: '/admin/videos', icon: Video, label: 'Video Management' },
-    { path: '/admin/videos/new', icon: Plus, label: 'Add Video' },
-    { path: '/admin/categories', icon: Tag, label: 'Categories' },
-    { path: '/admin/users', icon: Users, label: 'User Management' },
-    { path: '/admin/progress', icon: BarChart3, label: 'User Progress' },
-    { path: '/admin/chat', icon: MessageCircle, label: 'Chat' }, // <-- Add this line
-    { path: '/admin/preview', icon: Eye, label: 'Preview Portal' },
+    { path: '/admin', icon: LayoutDashboard, label: 'Tableau de bord', exact: true },
+    { path: '/admin/videos', icon: Video, label: 'Gestion des vidéos' },
+    { path: '/admin/videos/new', icon: Plus, label: 'Ajouter une vidéo' },
+    { path: '/admin/categories', icon: Tag, label: 'Catégories' },
+    { path: '/admin/users', icon: Users, label: 'Gestion des utilisateurs' },
+    { path: '/admin/progress', icon: BarChart3, label: 'Progression des utilisateurs' },
+    { path: '/admin/chat', icon: MessageCircle, label: 'Chat' },
+    { path: '/admin/preview', icon: Eye, label: 'Aperçu du portail' },
   ];
 
   const isActive = (path: string, exact?: boolean) => {
@@ -66,7 +66,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Admin Panel</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-6">Panneau d'administration</h2>
           <nav className="space-y-2">
             {menuItems.map((item) => {
               const Icon = item.icon;

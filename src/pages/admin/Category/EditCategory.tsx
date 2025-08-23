@@ -74,7 +74,7 @@ const EditCategory: React.FC = () => {
     return (
       <div className="space-y-8">
         <div className="flex justify-center items-center h-64">
-          <div className="text-gray-600">Loading category details...</div>
+          <div className="text-gray-600">Chargement des détails de la catégorie...</div>
         </div>
       </div>
     );
@@ -84,9 +84,9 @@ const EditCategory: React.FC = () => {
     return (
       <div className="space-y-8">
         <div className="text-center py-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Category Not Found</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Catégorie introuvable</h2>
           <Button onClick={() => navigate('/admin/categories')}>
-            Go Back to Categories
+            Retour aux catégories
           </Button>
         </div>
       </div>
@@ -102,29 +102,29 @@ const EditCategory: React.FC = () => {
           onClick={() => navigate('/admin/categories')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Categories
+          Retour aux catégories
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Category</h1>
-          <p className="text-gray-600 mt-1">Update category information</p>
+          <h1 className="text-3xl font-bold text-gray-900">Modifier la catégorie</h1>
+          <p className="text-gray-600 mt-1">Mettre à jour les informations de la catégorie</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Edit Form */}
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Category Details</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Détails de la catégorie</h2>
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category Name
+                Nom de la catégorie
               </label>
               <input
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={categoryName}
                 onChange={(e) => setCategoryName(e.target.value)}
-                placeholder="Enter category name..."
+                placeholder="Entrez le nom de la catégorie..."
               />
             </div>
 
@@ -135,7 +135,7 @@ const EditCategory: React.FC = () => {
                 className="flex-1"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {isSubmitting ? 'Updating...' : 'Update Category'}
+                {isSubmitting ? 'Mise à jour...' : 'Mettre à jour la catégorie'}
               </Button>
             </div>
           </div>
@@ -143,24 +143,24 @@ const EditCategory: React.FC = () => {
 
         {/* Category Statistics */}
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Category Statistics</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Statistiques de la catégorie</h2>
           <div className="space-y-4">
             <div className="flex justify-between items-center py-2 border-b border-gray-200">
-              <span className="text-gray-600">Assigned Users</span>
+              <span className="text-gray-600">Utilisateurs assignés</span>
               <span className="font-semibold">{category.users.length}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-200">
-              <span className="text-gray-600">Associated Videos</span>
+              <span className="text-gray-600">Vidéos associées</span>
               <span className="font-semibold">{category.videos.length}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-200">
-              <span className="text-gray-600">Created Date</span>
+              <span className="text-gray-600">Date de création</span>
               <span className="font-semibold">
                 {new Date(category.created_at).toLocaleDateString()}
               </span>
             </div>
             <div className="flex justify-between items-center py-2">
-              <span className="text-gray-600">Last Updated</span>
+              <span className="text-gray-600">Dernière modification</span>
               <span className="font-semibold">
                 {new Date(category.updated_at).toLocaleDateString()}
               </span>
@@ -172,7 +172,7 @@ const EditCategory: React.FC = () => {
       {/* Assigned Users */}
       {category.users.length > 0 && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Assigned Users</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Utilisateurs assignés</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {category.users.map((user) => (
               <div key={user.id} className="p-3 bg-gray-50 rounded-lg">
@@ -186,7 +186,7 @@ const EditCategory: React.FC = () => {
 
       {/* Associated Videos */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Associated Videos</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Vidéos associées</h2>
         {category.videos.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {category.videos.map((video) => (
@@ -199,8 +199,8 @@ const EditCategory: React.FC = () => {
         ) : (
           <div className="text-center py-8 text-gray-500">
             <Video className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>No videos available in this category</p>
-            <p className="text-sm mt-1">Videos will appear here when they are assigned to this category</p>
+            <p>Aucune vidéo disponible dans cette catégorie</p>
+            <p className="text-sm mt-1">Les vidéos apparaîtront ici lorsqu'elles seront assignées à cette catégorie</p>
           </div>
         )}
       </Card>

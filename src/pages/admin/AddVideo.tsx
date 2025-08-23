@@ -37,18 +37,18 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, videoTitle
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <div className="text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Video Uploaded Successfully!</h3>
-          <p className="text-gray-600 mb-6">"{videoTitle}" has been uploaded to Cloudinary and added to your video library.</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Vidéo téléchargée avec succès !</h3>
+          <p className="text-gray-600 mb-6">"{videoTitle}" a été téléchargée sur Cloudinary et ajoutée à votre bibliothèque de vidéos.</p>
           <div className="flex space-x-3">
             <Button onClick={onClose} className="flex-1">
-              View Videos
+              Voir les vidéos
             </Button>
             <Button
               variant="secondary"
               onClick={() => window.location.reload()}
               className="flex-1"
             >
-              Add Another
+              Ajouter une autre
             </Button>
           </div>
         </div>
@@ -81,7 +81,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <X className="h-8 w-8 text-red-500 mr-3" />
-              <h3 className="text-lg font-semibold text-gray-900">Upload Failed</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Échec du téléchargement</h3>
             </div>
             <button
               onClick={onClose}
@@ -93,20 +93,20 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
 
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="font-medium text-red-800 mb-2">Error Message:</h4>
+              <h4 className="font-medium text-red-800 mb-2">Message d'erreur :</h4>
               <p className="text-red-700 text-sm">{error.message}</p>
             </div>
 
             {error.status && (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-800 mb-2">HTTP Status:</h4>
+                <h4 className="font-medium text-gray-800 mb-2">Statut HTTP :</h4>
                 <p className="text-gray-700 text-sm">{error.status}</p>
               </div>
             )}
 
             {error.validationErrors && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-medium text-yellow-800 mb-2">Validation Errors:</h4>
+                <h4 className="font-medium text-yellow-800 mb-2">Erreurs de validation :</h4>
                 <div className="space-y-1">
                   {Object.entries(error.validationErrors).map(([field, messages]) => (
                     <div key={field} className="text-sm">
@@ -126,7 +126,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
 
             {error.details && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-800 mb-2">Response Details:</h4>
+                <h4 className="font-medium text-blue-800 mb-2">Détails de la réponse :</h4>
                 <pre className="text-xs text-blue-700 whitespace-pre-wrap overflow-x-auto">
                   {JSON.stringify(error.details, null, 2)}
                 </pre>
@@ -135,7 +135,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
 
             {error.requestData && (
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <h4 className="font-medium text-purple-800 mb-2">Request Data Sent:</h4>
+                <h4 className="font-medium text-purple-800 mb-2">Données de la requête envoyées :</h4>
                 <div className="text-xs text-purple-700 space-y-1">
                   <p><strong>Title:</strong> {error.requestData.title || 'N/A'}</p>
                   <p><strong>Description:</strong> {error.requestData.description || 'N/A'}</p>
@@ -150,10 +150,10 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
 
           <div className="flex space-x-3 mt-6">
             <Button onClick={copyErrorDetails} variant="secondary" className="flex-1">
-              Copy Error Details
+              Copier les détails de l'erreur
             </Button>
             <Button onClick={onClose} className="flex-1">
-              Close
+              Fermer
             </Button>
           </div>
         </div>
@@ -482,7 +482,7 @@ const AddVideo: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-center items-center h-64">
-          <div className="text-gray-600">Loading categories...</div>
+          <div className="text-gray-600">Chargement des catégories...</div>
         </div>
       </div>
     );
@@ -496,11 +496,11 @@ const AddVideo: React.FC = () => {
           onClick={() => navigate('/admin/videos')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Videos
+          Retour aux vidéos
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Add New Video</h1>
-          <p className="text-gray-600 mt-2">Upload video to Cloudinary and create new course content</p>
+          <h1 className="text-3xl font-bold text-gray-900">Ajouter une nouvelle vidéo</h1>
+          <p className="text-gray-600 mt-2">Téléchargez une vidéo sur Cloudinary et créez un nouveau contenu de cours</p>
         </div>
       </div>
 
@@ -508,18 +508,18 @@ const AddVideo: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
-              label="Video Title"
+              label="Titre de la vidéo"
               name="title"
               value={formData.title}
               onChange={handleInputChange}
-              placeholder="Enter video title"
+              placeholder="Entrez le titre de la vidéo"
               required
             />
 
             {/* Searchable Category Dropdown */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category *
+                Catégorie *
               </label>
               <div className="relative" ref={dropdownRef}>
                 <div
@@ -527,7 +527,7 @@ const AddVideo: React.FC = () => {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
                   <span className={selectedCategory ? 'text-gray-900' : 'text-gray-500'}>
-                    {selectedCategory ? selectedCategory.name : 'Select a category'}
+                    {selectedCategory ? selectedCategory.name : 'Sélectionnez une catégorie'}
                   </span>
                   <ChevronDown className={`h-4 w-4 text-gray-400 transform transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
@@ -540,7 +540,7 @@ const AddVideo: React.FC = () => {
                         <input
                           type="text"
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Search categories..."
+                          placeholder="Rechercher une catégorie..."
                           value={categorySearch}
                           onChange={(e) => setCategorySearch(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
@@ -580,14 +580,14 @@ const AddVideo: React.FC = () => {
               onChange={handleInputChange}
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter video description"
+              placeholder="Entrez la description de la vidéo"
             />
           </div>
 
           {/* Cover Image Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cover Image * <span className="text-xs text-gray-500">(Will be uploaded to Cloudinary)</span>
+              Image de couverture * <span className="text-xs text-gray-500">(Sera téléchargée sur Cloudinary)</span>
             </label>
             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors">
               <div className="space-y-1 text-center">
@@ -597,7 +597,7 @@ const AddVideo: React.FC = () => {
                     htmlFor="cover-upload"
                     className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
                   >
-                    <span>Upload cover image</span>
+                    <span>Télécharger une image de couverture</span>
                     <input
                       id="cover-upload"
                       name="cover-upload"
@@ -608,9 +608,9 @@ const AddVideo: React.FC = () => {
                       ref={coverFileInputRef}
                     />
                   </label>
-                  <p className="pl-1">or drag and drop</p>
+                  <p className="pl-1">ou glissez-déposez</p>
                 </div>
-                <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF up to 20MB</p>
+                <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF jusqu'à 20MB</p>
                 {formData.cover_image && (
                   <div className="mt-2 relative bg-green-50 border border-green-200 rounded-lg p-3">
                     <div className="flex items-center space-x-2">
@@ -643,7 +643,7 @@ const AddVideo: React.FC = () => {
           {/* Video File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Video File * <span className="text-xs text-gray-500">(Will be uploaded to Cloudinary)</span>
+              Fichier vidéo * <span className="text-xs text-gray-500">(Sera téléchargé sur Cloudinary)</span>
             </label>
             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors">
               <div className="space-y-1 text-center">
@@ -653,7 +653,7 @@ const AddVideo: React.FC = () => {
                     htmlFor="video-upload"
                     className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
                   >
-                    <span>Upload a video</span>
+                    <span>Télécharger une vidéo</span>
                     <input
                       id="video-upload"
                       name="video-upload"
@@ -664,9 +664,9 @@ const AddVideo: React.FC = () => {
                       ref={videoFileInputRef}
                     />
                   </label>
-                  <p className="pl-1">or drag and drop</p>
+                  <p className="pl-1">ou glissez-déposez</p>
                 </div>
-                <p className="text-xs text-gray-500">MP4, AVI, MOV, WMV, WebM and more up to 4GB</p>
+                <p className="text-xs text-gray-500">MP4, AVI, MOV, WMV, WebM et plus jusqu'à 4GB</p>
                 {formData.video_file && (
                   <div className="mt-2 relative bg-green-50 border border-green-200 rounded-lg p-3">
                     <div className="flex items-center space-x-2">
@@ -707,7 +707,7 @@ const AddVideo: React.FC = () => {
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="is_published" className="text-sm font-medium text-gray-700">
-              Publish immediately after upload
+              Publier immédiatement après le téléchargement
             </label>
           </div>
 
@@ -718,7 +718,7 @@ const AddVideo: React.FC = () => {
               disabled={isSubmitting}
             >
               <Video className="h-4 w-4 mr-2" />
-              {isSubmitting ? getUploadPhaseMessage() : 'Upload to Cloudinary'}
+              {isSubmitting ? getUploadPhaseMessage() : 'Télécharger sur Cloudinary'}
             </Button>
             <Button
               type="button"
@@ -727,7 +727,7 @@ const AddVideo: React.FC = () => {
               className="flex-1"
               disabled={isSubmitting}
             >
-              Cancel
+              Annuler
             </Button>
           </div>
 
@@ -750,25 +750,25 @@ const AddVideo: React.FC = () => {
                 <div className="flex items-center space-x-4">
                   <span className={`flex items-center ${uploadPhase === 'preparing' ? 'text-blue-600 font-medium' : uploadProgress > 0 ? 'text-green-600' : 'text-gray-400'}`}>
                     <Clock className="h-3 w-3 mr-1" />
-                    Preparing
+                    Préparation
                   </span>
                   <span className={`flex items-center ${uploadPhase === 'uploading' ? 'text-blue-600 font-medium' : uploadProgress >= 80 ? 'text-green-600' : 'text-gray-400'}`}>
                     <Upload className="h-3 w-3 mr-1" />
-                    Uploading
+                    Téléchargement
                   </span>
                   <span className={`flex items-center ${uploadPhase === 'processing' ? 'text-blue-600 font-medium' : uploadProgress >= 95 ? 'text-green-600' : 'text-gray-400'}`}>
                     <Video className="h-3 w-3 mr-1" />
-                    Processing
+                    Traitement
                   </span>
                   <span className={`flex items-center ${uploadPhase === 'finalizing' ? 'text-blue-600 font-medium' : uploadProgress === 100 ? 'text-green-600' : 'text-gray-400'}`}>
                     <CheckCircle className="h-3 w-3 mr-1" />
-                    Finalizing
+                    Finalisation
                   </span>
                 </div>
                 <p className="text-center text-gray-500">
-                  {uploadPhase === 'uploading' && 'Uploading files to Cloudinary...'}
-                  {uploadPhase === 'processing' && 'Cloudinary is processing your video...'}
-                  {uploadPhase === 'finalizing' && 'Saving video information to database...'}
+                  {uploadPhase === 'uploading' && 'Téléchargement des fichiers sur Cloudinary...'}
+                  {uploadPhase === 'processing' && 'Cloudinary traite votre vidéo...'}
+                  {uploadPhase === 'finalizing' && 'Enregistrement des informations de la vidéo dans la base de données...'}
                 </p>
               </div>
             </div>
@@ -778,16 +778,16 @@ const AddVideo: React.FC = () => {
 
       {categories.length === 0 && (
         <Card className="p-6 bg-yellow-50 border-yellow-200">
-          <h3 className="font-semibold text-yellow-900 mb-2">No Categories Available</h3>
+          <h3 className="font-semibold text-yellow-900 mb-2">Aucune catégorie disponible</h3>
           <p className="text-yellow-800 text-sm mb-3">
-            You need to create categories before adding videos.
+            Vous devez créer des catégories avant d'ajouter des vidéos.
           </p>
           <Button
             variant="secondary"
             onClick={() => navigate('/admin/categories')}
             className="text-sm"
           >
-            Go to Categories
+            Aller aux catégories
           </Button>
         </Card>
       )}
@@ -801,13 +801,13 @@ const AddVideo: React.FC = () => {
             </div>
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-blue-900 mb-2">Cloudinary Video Upload</h3>
+            <h3 className="font-semibold text-blue-900 mb-2">Téléchargement vidéo Cloudinary</h3>
             <div className="text-blue-800 text-sm space-y-1">
-              <p>• Videos are automatically optimized and stored on Cloudinary</p>
-              <p>• Multiple video formats are supported (up to 4GB)</p>
-              <p>• Cover images are also uploaded to Cloudinary for consistent delivery</p>
-              <p>• Video duration and file size are automatically detected</p>
-              <p>• All media files will be accessible via secure Cloudinary URLs</p>
+              <p>• Les vidéos sont automatiquement optimisées et stockées sur Cloudinary</p>
+              <p>• Plusieurs formats vidéo sont pris en charge (jusqu'à 4GB)</p>
+              <p>• Les images de couverture sont également téléchargées sur Cloudinary pour une diffusion cohérente</p>
+              <p>• La durée et la taille du fichier vidéo sont détectées automatiquement</p>
+              <p>• Tous les fichiers médias seront accessibles via des URLs Cloudinary sécurisées</p>
             </div>
           </div>
         </div>

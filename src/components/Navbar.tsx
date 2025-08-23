@@ -152,13 +152,13 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   // Get type label
   const getTypeLabel = (type: string) => {
     const typeMap: { [key: string]: string } = {
-      video_added: 'New Video',
-      comment_approved: 'Comment Approved',
-      comment_rejected: 'Comment Rejected',
-      new_comment: 'New Comment',
-      access_expiring: 'Access Expiring',
-      category_assigned: 'Category Assigned',
-      welcome: 'Welcome'
+      video_added: 'Nouvelle vidéo',
+      comment_approved: 'Commentaire approuvé',
+      comment_rejected: 'Commentaire rejeté',
+      new_comment: 'Nouveau commentaire',
+      access_expiring: 'Accès expirant',
+      category_assigned: 'Catégorie assignée',
+      welcome: 'Bienvenue'
     };
     return typeMap[type] || type;
   };
@@ -239,9 +239,9 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                 onChange={(e) => setFilter(e.target.value)}
                 className="border border-gray-300 rounded-md px-3 py-2"
               >
-                <option value="all">All</option>
-                <option value="unread">Unread Only</option>
-                <option value="read">Read Only</option>
+                <option value="all">Tous</option>
+                <option value="unread">Non lus uniquement</option>
+                <option value="read">Lus uniquement</option>
               </select>
 
               <select
@@ -249,31 +249,31 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="border border-gray-300 rounded-md px-3 py-2"
               >
-                <option value="all">All Types</option>
-                <option value="video_added">New Videos</option>
-                <option value="comment_approved">Approved Comments</option>
-                <option value="comment_rejected">Rejected Comments</option>
-                <option value="access_expiring">Access Expiring</option>
-                <option value="category_assigned">Category Updates</option>
+                <option value="all">Tous les types</option>
+                <option value="video_added">Nouvelles vidéos</option>
+                <option value="comment_approved">Commentaires approuvés</option>
+                <option value="comment_rejected">Commentaires rejetés</option>
+                <option value="access_expiring">Accès expirant</option>
+                <option value="category_assigned">Mises à jour de catégorie</option>
               </select>
 
               <Button onClick={handleMarkAllAsRead} variant="outline">
-                Mark All Read
+                Tout marquer comme lu
               </Button>
 
               <Button onClick={closeFullNotifications} variant="outline">
-                Close
+                Fermer
               </Button>
             </div>
           </div>
 
           <div className="space-y-4">
             {loading ? (
-              <div className="text-center py-12 text-gray-500">Loading notifications...</div>
+              <div className="text-center py-12 text-gray-500">Chargement des notifications...</div>
             ) : notifications.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <Bell className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <p>No notifications found</p>
+                <p>Aucune notification trouvée</p>
               </div>
             ) : (
               notifications.map((notification) => (
@@ -325,7 +325,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                         <button
                           onClick={() => handleMarkAsRead(notification.id)}
                           className="p-1 text-gray-400 hover:text-green-600"
-                          title="Mark as read"
+                          title="Marquer comme lu"
                         >
                           <CheckCircle className="h-5 w-5" />
                         </button>
@@ -334,7 +334,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                       <button
                         onClick={() => handleDelete(notification.id)}
                         className="p-1 text-gray-400 hover:text-red-600"
-                        title="Delete notification"
+                        title="Supprimer la notification"
                       >
                         <Trash2 className="h-5 w-5" />
                       </button>
@@ -408,10 +408,10 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
 
                   <div className="max-h-96 overflow-y-auto">
                     {loading ? (
-                      <div className="p-4 text-center text-gray-500">Loading...</div>
+                      <div className="p-4 text-center text-gray-500">Chargement...</div>
                     ) : notifications.length === 0 ? (
                       <div className="p-4 text-center text-gray-500">
-                        No notifications
+                        Aucune notification
                       </div>
                     ) : (
                       notifications.slice(0, 5).map((notification) => (
@@ -448,7 +448,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                               <button
                                 onClick={() => handleMarkAsRead(notification.id)}
                                 className="flex-shrink-0 text-gray-400 hover:text-gray-600"
-                                title="Mark as read"
+                                title="Marquer comme lu"
                               >
                                 <Check className="h-4 w-4" />
                               </button>

@@ -125,12 +125,12 @@ const CategoryManagement: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Category Management</h1>
-          <p className="text-gray-600 mt-2">Manage video categories and user assignments</p>
+          <h1 className="text-3xl font-bold text-gray-900">Gestion des catégories</h1>
+          <p className="text-gray-600 mt-2">Gérez les catégories de vidéos et l'attribution des utilisateurs</p>
         </div>
         <Button onClick={() => setShowAddModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add New Category
+          Ajouter une catégorie
         </Button>
       </div>
 
@@ -143,7 +143,7 @@ const CategoryManagement: React.FC = () => {
                 <Tag className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Categories</p>
+                <p className="text-sm font-medium text-gray-600">Catégories totales</p>
                 <p className="text-2xl font-bold text-gray-900">{statistics.total_categories}</p>
               </div>
             </div>
@@ -155,7 +155,7 @@ const CategoryManagement: React.FC = () => {
                 <Users className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">With Users</p>
+                <p className="text-sm font-medium text-gray-600">Avec utilisateurs</p>
                 <p className="text-2xl font-bold text-gray-900">{statistics.categories_with_users}</p>
               </div>
             </div>
@@ -167,7 +167,7 @@ const CategoryManagement: React.FC = () => {
                 <Video className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">With Videos</p>
+                <p className="text-sm font-medium text-gray-600">Avec vidéos</p>
                 <p className="text-2xl font-bold text-gray-900">{statistics.categories_with_videos}</p>
               </div>
             </div>
@@ -179,7 +179,7 @@ const CategoryManagement: React.FC = () => {
                 <Tag className="h-6 w-6 text-orange-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Most Popular</p>
+                <p className="text-sm font-medium text-gray-600">La plus populaire</p>
                 <p className="text-lg font-bold text-gray-900">
                   {statistics.most_popular_category?.name || 'None'}
                 </p>
@@ -195,7 +195,7 @@ const CategoryManagement: React.FC = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search categories..."
+            placeholder="Rechercher une catégorie..."
             className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -214,7 +214,7 @@ const CategoryManagement: React.FC = () => {
         ))}
         {filteredCategories.length === 0 && (
           <div className="col-span-full text-center py-8 text-gray-500">
-            {searchTerm ? 'No categories found matching your search.' : 'No categories created yet.'}
+            {searchTerm ? 'Aucune catégorie trouvée correspondant à votre recherche.' : 'Aucune catégorie créée pour le moment.'}
           </div>
         )}
       </div>
@@ -223,16 +223,16 @@ const CategoryManagement: React.FC = () => {
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Add New Category</h2>
+            <h2 className="text-xl font-semibold mb-4">Ajouter une catégorie</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category Name
+                  Nom de la catégorie
                 </label>
                 <input
                   type="text"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter category name..."
+                  placeholder="Entrez le nom de la catégorie..."
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleCreateCategory()}
@@ -244,7 +244,7 @@ const CategoryManagement: React.FC = () => {
                   disabled={!newCategoryName.trim() || isSubmitting}
                   className="flex-1"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Category'}
+                  {isSubmitting ? 'Création...' : 'Créer la catégorie'}
                 </Button>
                 <Button
                   variant="secondary"
@@ -254,7 +254,7 @@ const CategoryManagement: React.FC = () => {
                   }}
                   className="flex-1"
                 >
-                  Cancel
+                  Annuler
                 </Button>
               </div>
             </div>
@@ -281,7 +281,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onDelete }) => {
           <div className="ml-3">
             <h3 className="font-semibold text-gray-900">{category.name}</h3>
             <p className="text-sm text-gray-500">
-              Created {new Date(category.created_at).toLocaleDateString()}
+              Créée le {new Date(category.created_at).toLocaleDateString()}
             </p>
           </div>
         </div>
@@ -291,11 +291,11 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onDelete }) => {
         <div className="flex space-x-4">
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">{category.users_count}</p>
-            <p className="text-xs text-gray-500">Users</p>
+            <p className="text-xs text-gray-500">Utilisateurs</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">{category.videos_count}</p>
-            <p className="text-xs text-gray-500">Videos</p>
+            <p className="text-xs text-gray-500">Vidéos</p>
           </div>
         </div>
       </div>
@@ -304,15 +304,10 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onDelete }) => {
         <Link to={`/admin/categories/edit/${category.id}`} className="flex-1">
           <Button size="sm" variant="secondary" className="w-full">
             <Edit className="h-3 w-3 mr-1" />
-            Edit
+            Modifier
           </Button>
         </Link>
-        <Link to={`/admin/categories/assign/${category.id}`} className="flex-1">
-          <Button size="sm" className="w-full">
-            <Users className="h-3 w-3 mr-1" />
-            Assign
-          </Button>
-        </Link>
+
         <Button
           size="sm"
           variant="danger"

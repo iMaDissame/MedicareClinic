@@ -580,7 +580,7 @@ const VideoWatchPage: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-600">Loading video...</div>
+          <div className="text-gray-600">Chargement de la vidéo...</div>
         </div>
       </div>
     );
@@ -595,15 +595,15 @@ const VideoWatchPage: React.FC = () => {
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Go Back
+          Retour
         </Button>
         
         <Card className="p-6 bg-red-50 border-red-200">
           <div className="flex items-center">
             <X className="h-6 w-6 text-red-500 mr-3" />
             <div>
-              <h3 className="font-semibold text-red-900">Error Loading Video</h3>
-              <p className="text-red-700 text-sm mt-1">{error || 'Video not found'}</p>
+              <h3 className="font-semibold text-red-900">Erreur lors du chargement de la vidéo</h3>
+              <p className="text-red-700 text-sm mt-1">{error || 'Vidéo introuvable'}</p>
             </div>
           </div>
         </Card>
@@ -624,7 +624,7 @@ const VideoWatchPage: React.FC = () => {
           className="mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          Retour
         </Button>
 
         {/* Enhanced Video Player Section */}
@@ -633,14 +633,14 @@ const VideoWatchPage: React.FC = () => {
             <div className="aspect-video bg-gray-100 flex items-center justify-center">
               <div className="text-center">
                 <X className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <p className="text-red-600 font-medium">Video Load Error</p>
+                <p className="text-red-600 font-medium">Erreur de chargement de la vidéo</p>
                 <p className="text-gray-600 text-sm mt-1">{videoError}</p>
                 <Button 
                   onClick={() => window.location.reload()} 
                   className="mt-4"
                   size="sm"
                 >
-                  Refresh Page
+                  Rafraîchir la page
                 </Button>
               </div>
             </div>
@@ -837,7 +837,7 @@ const VideoWatchPage: React.FC = () => {
             <div className="aspect-video bg-gray-100 flex items-center justify-center">
               <div className="text-center">
                 <Play className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Video not available</p>
+                <p className="text-gray-600">Vidéo non disponible</p>
               </div>
             </div>
           )}
@@ -855,12 +855,12 @@ const VideoWatchPage: React.FC = () => {
             <div className="flex items-center text-sm text-gray-500 mb-4 space-x-4">
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2" />
-                <span>Published on {formatDate(video.created_at)}</span>
+                <span>Publié le {formatDate(video.created_at)}</span>
               </div>
               
               {video.duration && (
                 <div className="flex items-center">
-                  <span>Duration: {formatDuration(video.duration)}</span>
+                  <span>Durée : {formatDuration(video.duration)}</span>
                 </div>
               )}
               
@@ -868,13 +868,13 @@ const VideoWatchPage: React.FC = () => {
 
             {/* Keyboard Shortcuts Info */}
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Keyboard Shortcuts</h4>
+              <h4 className="text-sm font-medium text-gray-900 mb-2">Raccourcis clavier</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600">
-                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">Space</kbd> Play/Pause</div>
-                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">←/→</kbd> Skip 10s</div>
+                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">Espace</kbd> Lecture/Pause</div>
+                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">←/→</kbd> Reculer/Avancer 10s</div>
                 <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">↑/↓</kbd> Volume</div>
-                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">F</kbd> Fullscreen</div>
-                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">M</kbd> Mute</div>
+                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">F</kbd> Plein écran</div>
+                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">M</kbd> Muet</div>
               </div>
             </div>
             
@@ -893,7 +893,7 @@ const VideoWatchPage: React.FC = () => {
             <div className="flex items-center mb-6">
               <MessageCircle className="h-5 w-5 mr-2" />
               <h2 className="text-lg font-semibold text-gray-900">
-                Comments ({visibleComments.length})
+                Commentaires ({visibleComments.length})
               </h2>
             </div>
 
@@ -904,7 +904,7 @@ const VideoWatchPage: React.FC = () => {
                   <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a comment..."
+                    placeholder="Ajouter un commentaire…"
                     className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={3}
                     disabled={submittingComment}
@@ -917,12 +917,12 @@ const VideoWatchPage: React.FC = () => {
                   className="w-full"
                 >
                   <Send className="h-4 w-4 mr-2" />
-                  {submittingComment ? 'Posting...' : 'Post Comment'}
+                  {submittingComment ? 'Publication...' : 'Publier le commentaire'}
                 </Button>
               </form>
             ) : (
               <div className="mb-6 p-4 bg-gray-50 rounded-lg text-center">
-                <p className="text-gray-600 text-sm">Please log in to add comments</p>
+                <p className="text-gray-600 text-sm">Veuillez vous connecter pour ajouter des commentaires</p>
               </div>
             )}
 
@@ -970,17 +970,17 @@ const VideoWatchPage: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         {!comment.is_approved && (
                           <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                            Pending Approval
+                            En attente d'approbation
                           </span>
                         )}
                         {comment.is_approved && (
                           <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                            Approved
+                            Approuvé
                           </span>
                         )}
                         {isOwnComment && (
                           <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                            Your comment
+                            Votre commentaire
                           </span>
                         )}
                       </div>
@@ -990,9 +990,9 @@ const VideoWatchPage: React.FC = () => {
               ) : (
                 <div className="text-center py-8">
                   <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-sm">No comments yet</p>
+                  <p className="text-gray-500 text-sm">Aucun commentaire pour le moment</p>
                   <p className="text-gray-400 text-xs mt-1">
-                    Be the first to share your thoughts!
+                    Soyez le premier à partager vos idées !
                   </p>
                 </div>
               )}

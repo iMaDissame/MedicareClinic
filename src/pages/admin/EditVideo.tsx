@@ -57,18 +57,18 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, videoTitle
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <div className="text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Video Updated Successfully!</h3>
-          <p className="text-gray-600 mb-6">"{videoTitle}" has been updated successfully.</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Vidéo mise à jour avec succès !</h3>
+          <p className="text-gray-600 mb-6">"{videoTitle}" a été mise à jour avec succès.</p>
           <div className="flex space-x-3">
             <Button onClick={onClose} className="flex-1">
-              View Videos
+              Voir les vidéos
             </Button>
             <Button
               variant="secondary"
               onClick={() => window.location.reload()}
               className="flex-1"
             >
-              Continue Editing
+              Continuer la modification
             </Button>
           </div>
         </div>
@@ -101,7 +101,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <X className="h-8 w-8 text-red-500 mr-3" />
-              <h3 className="text-lg font-semibold text-gray-900">Update Failed</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Échec de la mise à jour</h3>
             </div>
             <button
               onClick={onClose}
@@ -113,20 +113,20 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
 
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h4 className="font-medium text-red-800 mb-2">Error Message:</h4>
+              <h4 className="font-medium text-red-800 mb-2">Message d'erreur :</h4>
               <p className="text-red-700 text-sm">{error.message}</p>
             </div>
 
             {error.status && (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-800 mb-2">HTTP Status:</h4>
+                <h4 className="font-medium text-gray-800 mb-2">Statut HTTP :</h4>
                 <p className="text-gray-700 text-sm">{error.status}</p>
               </div>
             )}
 
             {error.validationErrors && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 className="font-medium text-yellow-800 mb-2">Validation Errors:</h4>
+                <h4 className="font-medium text-yellow-800 mb-2">Erreurs de validation :</h4>
                 <div className="space-y-1">
                   {Object.entries(error.validationErrors).map(([field, messages]) => (
                     <div key={field} className="text-sm">
@@ -146,7 +146,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
 
             {error.details && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-medium text-blue-800 mb-2">Response Details:</h4>
+                <h4 className="font-medium text-blue-800 mb-2">Détails de la réponse :</h4>
                 <pre className="text-xs text-blue-700 whitespace-pre-wrap overflow-x-auto">
                   {JSON.stringify(error.details, null, 2)}
                 </pre>
@@ -156,10 +156,10 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
 
           <div className="flex space-x-3 mt-6">
             <Button onClick={copyErrorDetails} variant="secondary" className="flex-1">
-              Copy Error Details
+              Copier les détails de l'erreur
             </Button>
             <Button onClick={onClose} className="flex-1">
-              Close
+              Fermer
             </Button>
           </div>
         </div>
@@ -380,7 +380,7 @@ const EditVideo: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-center items-center h-64">
-          <div className="text-gray-600">Loading video details...</div>
+          <div className="text-gray-600">Chargement des détails de la vidéo...</div>
         </div>
       </div>
     );
@@ -390,7 +390,7 @@ const EditVideo: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-center items-center h-64">
-          <div className="text-red-600">Video not found</div>
+          <div className="text-red-600">Vidéo introuvable</div>
         </div>
       </div>
     );
@@ -404,11 +404,11 @@ const EditVideo: React.FC = () => {
           onClick={() => navigate('/admin/videos')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Videos
+          Retour aux vidéos
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Video</h1>
-          <p className="text-gray-600 mt-2">Update video details</p>
+          <h1 className="text-3xl font-bold text-gray-900">Modifier la vidéo</h1>
+          <p className="text-gray-600 mt-2">Mettre à jour les détails de la vidéo</p>
         </div>
       </div>
 
@@ -416,36 +416,36 @@ const EditVideo: React.FC = () => {
       <Card className="p-6 bg-blue-50 border-blue-200">
         <h3 className="font-semibold text-blue-900 mb-4 flex items-center">
           <Video className="h-5 w-5 mr-2" />
-          Current Video Information
+          Informations actuelles de la vidéo
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div className="space-y-2">
             <div>
-              <span className="font-medium text-blue-800">Duration:</span>
+              <span className="font-medium text-blue-800">Durée :</span>
               <span className="text-blue-700 ml-2">{formatDuration(video.duration)}</span>
             </div>
             <div>
-              <span className="font-medium text-blue-800">File Size:</span>
+              <span className="font-medium text-blue-800">Taille du fichier :</span>
               <span className="text-blue-700 ml-2">{formatFileSize(video.file_size)}</span>
             </div>
             <div>
-              <span className="font-medium text-blue-800">Status:</span>
+              <span className="font-medium text-blue-800">Statut :</span>
               <span className={`ml-2 px-2 py-1 rounded-full text-xs ${
                 video.is_published 
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-yellow-100 text-yellow-800'
               }`}>
-                {video.is_published ? 'Published' : 'Draft'}
+                {video.is_published ? 'Publié' : 'Brouillon'}
               </span>
             </div>
           </div>
           <div className="space-y-2">
             <div>
-              <span className="font-medium text-blue-800">Video URL:</span>
+              <span className="font-medium text-blue-800">URL de la vidéo :</span>
               <div className="text-blue-700 text-xs break-all">{video.video_url}</div>
             </div>
             <div>
-              <span className="font-medium text-blue-800">Cover URL:</span>
+              <span className="font-medium text-blue-800">URL de la couverture :</span>
               <div className="text-blue-700 text-xs break-all">{video.cover_url}</div>
             </div>
           </div>
@@ -456,18 +456,18 @@ const EditVideo: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
-              label="Video Title"
+              label="Titre de la vidéo"
               name="title"
               value={formData.title}
               onChange={handleInputChange}
-              placeholder="Enter video title"
+              placeholder="Entrez le titre de la vidéo"
               required
             />
 
             {/* Searchable Category Dropdown */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category *
+                Catégorie *
               </label>
               <div className="relative" ref={dropdownRef}>
                 <div
@@ -475,7 +475,7 @@ const EditVideo: React.FC = () => {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
                   <span className={selectedCategory ? 'text-gray-900' : 'text-gray-500'}>
-                    {selectedCategory ? selectedCategory.name : 'Select a category'}
+                    {selectedCategory ? selectedCategory.name : 'Sélectionnez une catégorie'}
                   </span>
                   <ChevronDown className={`h-4 w-4 text-gray-400 transform transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
@@ -488,7 +488,7 @@ const EditVideo: React.FC = () => {
                         <input
                           type="text"
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Search categories..."
+                          placeholder="Rechercher des catégories..."
                           value={categorySearch}
                           onChange={(e) => setCategorySearch(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
@@ -508,7 +508,7 @@ const EditVideo: React.FC = () => {
                         ))
                       ) : (
                         <div className="px-4 py-2 text-gray-500 text-sm">
-                          No categories found
+                          Aucune catégorie trouvée
                         </div>
                       )}
                     </div>
@@ -528,7 +528,7 @@ const EditVideo: React.FC = () => {
               onChange={handleInputChange}
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter video description"
+              placeholder="Entrez la description de la vidéo"
             />
           </div>
 
@@ -542,7 +542,7 @@ const EditVideo: React.FC = () => {
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="is_published" className="text-sm font-medium text-gray-700">
-              Published
+              Publiée
             </label>
           </div>
 
@@ -553,7 +553,7 @@ const EditVideo: React.FC = () => {
               disabled={isSubmitting}
             >
               <Save className="h-4 w-4 mr-2" />
-              {isSubmitting ? 'Updating...' : 'Save Changes'}
+              {isSubmitting ? 'Mise à jour...' : 'Enregistrer les modifications'}
             </Button>
             <Button
               type="button"
@@ -562,7 +562,7 @@ const EditVideo: React.FC = () => {
               className="flex-1"
               disabled={isSubmitting}
             >
-              Cancel
+              Annuler
             </Button>
           </div>
         </form>
@@ -570,16 +570,16 @@ const EditVideo: React.FC = () => {
 
       {categories.length === 0 && (
         <Card className="p-6 bg-yellow-50 border-yellow-200">
-          <h3 className="font-semibold text-yellow-900 mb-2">No Categories Available</h3>
+          <h3 className="font-semibold text-yellow-900 mb-2">Aucune catégorie disponible</h3>
           <p className="text-yellow-800 text-sm mb-3">
-            You need to create categories before editing videos.
+            Vous devez créer des catégories avant de modifier des vidéos.
           </p>
           <Button
             variant="secondary"
             onClick={() => navigate('/admin/categories')}
             className="text-sm"
           >
-            Go to Categories
+            Aller aux catégories
           </Button>
         </Card>
       )}
@@ -593,12 +593,12 @@ const EditVideo: React.FC = () => {
             </div>
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-green-900 mb-2">Video Files</h3>
+            <h3 className="font-semibold text-green-900 mb-2">Fichiers vidéo</h3>
             <div className="text-green-800 text-sm space-y-1">
-              <p>• Video and cover image are stored on Cloudinary</p>
-              <p>• To replace video files, you'll need to upload a new video</p>
-              <p>• This form only updates metadata (title, description, category, publish status)</p>
-              <p>• All media files remain accessible via their Cloudinary URLs</p>
+              <p>• La vidéo et l'image de couverture sont stockées sur Cloudinary</p>
+              <p>• Pour remplacer les fichiers vidéo, vous devez télécharger une nouvelle vidéo</p>
+              <p>• Ce formulaire met à jour uniquement les métadonnées (titre, description, catégorie, statut de publication)</p>
+              <p>• Tous les fichiers médias restent accessibles via leurs URLs Cloudinary</p>
             </div>
           </div>
         </div>

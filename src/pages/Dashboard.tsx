@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Play, Clock, BookOpen, Calendar, AlertCircle, Eye, EyeOff, TrendingUp, Award, Edit, Trash2, User, BarChart3, Target, Star } from 'lucide-react';
+import { Play, Clock, BookOpen, Calendar, AlertCircle, Eye, TrendingUp, Award, User, BarChart3, Target, Star } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { UserProgress } from '../types';
@@ -188,34 +188,20 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         {/* Welcome Header */}
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-xl">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-              <div className="mb-4 md:mb-0">
-                <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-                  Welcome back, {user.username}! 👋
-                </h1>
-                <p className="text-blue-100 text-lg">Ready to continue your learning journey?</p>
-                <div className="flex items-center mt-3">
-                  <User className="h-4 w-4 mr-2" />
-                  <span className="text-blue-200 text-sm">
-                    Member since {formatDate(user.created_at || new Date().toISOString())}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{averageProgress}%</div>
-                  <div className="text-blue-200 text-sm">Avg Progress</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{completedVideos}</div>
-                  <div className="text-blue-200 text-sm">Completed</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{userStats.achievements || 0}</div>
-                  <div className="text-blue-200 text-sm">Achievements</div>
-                </div>
+        <div className="mb-6 md:mb-8">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl md:rounded-2xl p-4 md:p-6 text-white shadow-xl">
+            <div className="text-center md:text-left">
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2">
+                Bienvenue, {user.username} ! 👋
+              </h1>
+              <p className="text-blue-100 text-base md:text-lg mb-3 md:mb-2">
+                Prêt à poursuivre votre parcours d'apprentissage ?
+              </p>
+              <div className="flex items-center justify-center md:justify-start">
+                <User className="h-4 w-4 mr-2" />
+                <span className="text-blue-200 text-sm">
+                  Membre depuis {formatDate(user.created_at || new Date().toISOString())}
+                </span>
               </div>
             </div>
           </div>
@@ -223,10 +209,10 @@ const Dashboard: React.FC = () => {
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 p-4 border border-red-200 bg-red-50 rounded-xl shadow-sm">
+          <div className="mb-4 md:mb-6 p-3 md:p-4 border border-red-200 bg-red-50 rounded-xl shadow-sm">
             <div className="flex items-center text-red-600">
               <AlertCircle className="h-5 w-5 mr-2" />
-              <span>{error}</span>
+              <span className="text-sm md:text-base">{error}</span>
               <button
                 onClick={() => setError(null)}
                 className="ml-auto text-red-600 hover:text-red-800 font-bold text-xl leading-none"
@@ -237,78 +223,69 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Enhanced Statistics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+          <Card className="p-3 md:p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
             <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <BookOpen className="h-6 w-6 text-blue-600" />
+              <div className="p-2 md:p-3 bg-blue-100 rounded-lg md:rounded-xl">
+                <BookOpen className="h-4 w-4 md:h-6 md:w-6 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Available Videos</p>
-                <p className="text-2xl font-bold text-gray-900">{videos.length}</p>
+              <div className="ml-2 md:ml-4">
+                <p className="text-xs md:text-sm font-medium text-gray-600">Vidéos disponibles</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900">{videos.length}</p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
+          <Card className="p-3 md:p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
             <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-xl">
-                <Award className="h-6 w-6 text-green-600" />
+              <div className="p-2 md:p-3 bg-green-100 rounded-lg md:rounded-xl">
+                <Award className="h-4 w-4 md:h-6 md:w-6 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-gray-900">{completedVideos}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {videos.length > 0 ? Math.round((completedVideos / videos.length) * 100) : 0}% of total
-                </p>
+              <div className="ml-2 md:ml-4">
+                <p className="text-xs md:text-sm font-medium text-gray-600">Terminées</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900">{completedVideos}</p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
+          <Card className="p-3 md:p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
             <div className="flex items-center">
-              <div className="p-3 bg-orange-100 rounded-xl">
-                <TrendingUp className="h-6 w-6 text-orange-600" />
+              <div className="p-2 md:p-3 bg-orange-100 rounded-lg md:rounded-xl">
+                <TrendingUp className="h-4 w-4 md:h-6 md:w-6 text-orange-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">In Progress</p>
-                <p className="text-2xl font-bold text-gray-900">{inProgressVideos}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {videos.length > 0 ? Math.round((inProgressVideos / videos.length) * 100) : 0}% of total
-                </p>
+              <div className="ml-2 md:ml-4">
+                <p className="text-xs md:text-sm font-medium text-gray-600">En cours</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900">{inProgressVideos}</p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
+          <Card className="p-3 md:p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
             <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-xl">
-                <Calendar className="h-6 w-6 text-yellow-600" />
+              <div className="p-2 md:p-3 bg-yellow-100 rounded-lg md:rounded-xl">
+                <Calendar className="h-4 w-4 md:h-6 md:w-6 text-yellow-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Access Expires</p>
-                <p className="text-2xl font-bold text-gray-900">{getAccessDaysRemaining()}d</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {getAccessDaysRemaining() > 7 ? 'Plenty of time left' : 'Renew soon'}
-                </p>
+              <div className="ml-2 md:ml-4">
+                <p className="text-xs md:text-sm font-medium text-gray-600">Expiration de l'accès</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900">{getAccessDaysRemaining()}d</p>
               </div>
             </div>
           </Card>
         </div>
 
         {/* User Progress Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card className="p-6 bg-white shadow-lg border-0">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2 text-indigo-600" />
-              Learning Progress
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+          <Card className="p-4 md:p-6 bg-white shadow-lg border-0">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <BarChart3 className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indigo-600" />
+              Progression d'apprentissage
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Completed</span>
-                  <span className="font-medium">{completedVideos} videos</span>
+                <div className="flex justify-between text-xs md:text-sm mb-1">
+                  <span className="text-gray-600">Terminées</span>
+                  <span className="font-medium">{completedVideos} vidéos</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
@@ -318,9 +295,9 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">In Progress</span>
-                  <span className="font-medium">{inProgressVideos} videos</span>
+                <div className="flex justify-between text-xs md:text-sm mb-1">
+                  <span className="text-gray-600">En cours</span>
+                  <span className="font-medium">{inProgressVideos} vidéos</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
@@ -330,9 +307,9 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">Not Started</span>
-                  <span className="font-medium">{notStartedVideos} videos</span>
+                <div className="flex justify-between text-xs md:text-sm mb-1">
+                  <span className="text-gray-600">Non commencées</span>
+                  <span className="font-medium">{notStartedVideos} vidéos</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
@@ -344,55 +321,55 @@ const Dashboard: React.FC = () => {
             </div>
           </Card>
 
-          <Card className="p-6 bg-white shadow-lg border-0">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Target className="h-5 w-5 mr-2 text-indigo-600" />
-              Learning Insights
+          <Card className="p-4 md:p-6 bg-white shadow-lg border-0">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Target className="h-4 w-4 md:h-5 md:w-5 mr-2 text-indigo-600" />
+              Statistiques d'apprentissage
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2 md:space-y-3">
               {userStats.favoriteCategory && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Favorite Category:</span>
-                  <span className="font-medium">{userStats.favoriteCategory}</span>
+                  <span className="text-xs md:text-sm text-gray-600">Catégorie préférée :</span>
+                  <span className="text-xs md:text-sm font-medium">{userStats.favoriteCategory}</span>
                 </div>
               )}
               {userStats.totalWatchTime > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Total Watch Time:</span>
-                  <span className="font-medium">{formatDuration(userStats.totalWatchTime)}</span>
+                  <span className="text-xs md:text-sm text-gray-600">Temps total de visionnage :</span>
+                  <span className="text-xs md:text-sm font-medium">{formatDuration(userStats.totalWatchTime)}</span>
                 </div>
               )}
               {userStats.lastWatched && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Last Watched:</span>
-                  <span className="font-medium text-right">{userStats.lastWatched.title}</span>
+                  <span className="text-xs md:text-sm text-gray-600">Dernière vidéo vue :</span>
+                  <span className="text-xs md:text-sm font-medium text-right">{userStats.lastWatched.title}</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-600">Average Progress:</span>
-                <span className="font-medium">{averageProgress}%</span>
+                <span className="text-xs md:text-sm text-gray-600">Progression moyenne :</span>
+                <span className="text-xs md:text-sm font-medium">{averageProgress}%</span>
               </div>
             </div>
           </Card>
         </div>
 
         {/* Videos Section */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Your Learning Content</h2>
-            <div className="text-sm text-gray-600">
-              {videos.length} video{videos.length !== 1 ? 's' : ''} available • {completedVideos} completed
+        <div className="mb-4 md:mb-6">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">Votre contenu d'apprentissage</h2>
+            <div className="text-xs md:text-sm text-gray-600">
+              {videos.length} vidéo{videos.length !== 1 ? 's' : ''} disponibles • {completedVideos} terminées
             </div>
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-16">
+          <div className="text-center py-12 md:py-16">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-600 text-lg">Loading your videos...</p>
+            <p className="text-gray-600 text-base md:text-lg">Chargement de vos vidéos...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {videos.map((video) => {
               const videoProgress = getVideoProgress(video.id);
               const isCompleted = videoProgress >= 95;
@@ -416,13 +393,13 @@ const Dashboard: React.FC = () => {
         )}
 
         {!loading && videos.length === 0 && (
-          <div className="text-center py-16">
+          <div className="text-center py-12 md:py-16">
             <div className="inline-flex items-center justify-center p-4 bg-blue-100 rounded-full mb-6">
               <BookOpen className="h-12 w-12 text-blue-600" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">No Videos Available Yet</h3>
-            <p className="text-gray-600 max-w-md mx-auto">
-              It looks like no learning content has been assigned to you yet. Check back later or contact your instructor for more information.
+            <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-3">Aucune vidéo disponible pour le moment</h3>
+            <p className="text-sm md:text-base text-gray-600 max-w-md mx-auto">
+              Il semble qu'aucun contenu d'apprentissage ne vous ait encore été attribué. Revenez plus tard ou contactez votre instructeur pour plus d'informations.
             </p>
           </div>
         )}
@@ -458,20 +435,20 @@ const VideoCard: React.FC<VideoCardProps> = ({
         <img
           src={getCoverImageUrl(video)}
           alt={video.title}
-          className="w-full h-48 object-cover cursor-pointer"
+          className="w-full h-36 md:h-48 object-cover cursor-pointer"
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"%3E%3Crect width="400" height="200" fill="%23f3f4f6"/%3E%3Ctext x="200" y="100" text-anchor="middle" dy="0.3em" font-family="Arial, sans-serif" font-size="16" fill="%236b7280"%3ENo Image%3C/text%3E%3C/svg%3E';
           }}
         />
 
-        {/* Play button overlay - matching VideoManagement style */}
+        {/* Play button overlay */}
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center cursor-pointer">
           <Link
             to={`/app/watch/${video.id}`}
-            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 transform hover:scale-110 transition-transform"
+            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-2 md:p-3 transform hover:scale-110 transition-transform"
             title="Watch video"
           >
-            <Play className="h-6 w-6 text-gray-700 ml-1" />
+            <Play className="h-5 w-5 md:h-6 md:w-6 text-gray-700 ml-1" />
           </Link>
         </div>
 
@@ -481,7 +458,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
             ? 'bg-green-100 text-green-800'
             : 'bg-yellow-100 text-yellow-800'
             }`}>
-            {video.is_published ? 'Published' : 'Draft'}
+            {video.is_published ? 'Publiée' : 'Brouillon'}
           </span>
         </div>
 
@@ -498,7 +475,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
         {isCompleted && (
           <div className="absolute top-12 right-2">
             <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-500 text-white">
-              ✓ Completed
+              ✓ Terminée
             </span>
           </div>
         )}
@@ -524,16 +501,16 @@ const VideoCard: React.FC<VideoCardProps> = ({
         )}
       </div>
 
-      <div className="p-4 flex-grow flex flex-col">
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2" title={video.title}>
+      <div className="p-3 md:p-4 flex-grow flex flex-col">
+        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 text-sm md:text-base" title={video.title}>
           {video.title}
         </h3>
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2 flex-grow" title={video.description}>
-          {video.description || 'No description provided'}
+        <p className="text-xs md:text-sm text-gray-600 mb-3 line-clamp-2 flex-grow" title={video.description}>
+          {video.description || 'Aucune description fournie'}
         </p>
 
         {/* Video metadata */}
-        <div className="space-y-2 text-xs text-gray-500 mb-4">
+        <div className="space-y-2 text-xs text-gray-500 mb-3 md:mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Clock className="h-3 w-3 mr-1" />
@@ -545,15 +522,15 @@ const VideoCard: React.FC<VideoCardProps> = ({
           </div>
           <div className="flex items-center">
             <Calendar className="h-3 w-3 mr-1" />
-            <span>Added {formatDate(video.created_at)}</span>
+            <span>Ajoutée le {formatDate(video.created_at)}</span>
           </div>
         </div>
 
         {/* Progress section */}
         {hasStarted && (
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-600">Your Progress</span>
+          <div className="mb-3 md:mb-4">
+            <div className="flex justify-between text-xs md:text-sm mb-2">
+              <span className="text-gray-600">Votre progression</span>
               <span className="font-medium text-gray-900">{Math.round(videoProgress)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -573,10 +550,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
           <Button
             size="sm"
             variant={isCompleted ? 'secondary' : 'primary'}
-            className="w-full"
+            className="w-full text-xs md:text-sm"
           >
-            <Play className="h-4 w-4 mr-2" />
-            {isCompleted ? 'Review Video' : hasStarted ? 'Continue Learning' : 'Start Learning'}
+            <Play className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+            {isCompleted ? 'Revoir la vidéo' : hasStarted ? 'Continuer l\'apprentissage' : 'Commencer l\'apprentissage'}
           </Button>
         </Link>
       </div>

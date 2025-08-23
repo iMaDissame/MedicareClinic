@@ -109,8 +109,8 @@ const UserProgress: React.FC = () => {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">User Progress Tracking</h1>
-        <p className="text-gray-600 mt-2">Monitor student learning progress and engagement</p>
+        <h1 className="text-3xl font-bold text-gray-900">Suivi de la progression des utilisateurs</h1>
+        <p className="text-gray-600 mt-2">Surveillez la progression et l'engagement des étudiants</p>
       </div>
 
       {/* Overview Stats */}
@@ -121,7 +121,7 @@ const UserProgress: React.FC = () => {
               <UserIcon className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Students</p>
+              <p className="text-sm font-medium text-gray-600">Étudiants totaux</p>
               <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
             </div>
           </div>
@@ -145,7 +145,7 @@ const UserProgress: React.FC = () => {
               <Award className="h-6 w-6 text-purple-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Completed Videos</p>
+              <p className="text-sm font-medium text-gray-600">Vidéos complétées</p>
               <p className="text-2xl font-bold text-gray-900">{stats.completedCourses}</p>
             </div>
           </div>
@@ -157,7 +157,7 @@ const UserProgress: React.FC = () => {
               <BarChart3 className="h-6 w-6 text-yellow-600" />
             </div>
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Avg Progress</p>
+              <p className="text-sm font-medium text-gray-600">Progression moyenne</p>
               <p className="text-2xl font-bold text-gray-900">{stats.avgProgress}%</p>
             </div>
           </div>
@@ -169,7 +169,7 @@ const UserProgress: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input
-              placeholder="Search users by name, email, or username..."
+              placeholder="Rechercher des utilisateurs par nom, email ou nom d'utilisateur..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -180,26 +180,26 @@ const UserProgress: React.FC = () => {
       {/* User Progress Details */}
       <Card>
         <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Individual Progress</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Progression individuelle</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Student
+                  Étudiant
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Videos Assigned
+                  Vidéos assignées
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Completed
+                  Complétées
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Progress
+                  Progression
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Last Activity
+                  Dernière activité
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Actions
@@ -227,7 +227,7 @@ const UserProgress: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                      {user.videos_completed} completed
+                      {user.videos_completed} complétées
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -248,7 +248,7 @@ const UserProgress: React.FC = () => {
                         {formatDate(user.last_activity)}
                       </div>
                     ) : (
-                      'No activity'
+                      'Aucune activité'
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -257,7 +257,7 @@ const UserProgress: React.FC = () => {
                       variant="secondary"
                       onClick={() => loadUserDetails(user.id)}
                     >
-                      View Details
+                      Voir les détails
                     </Button>
                   </td>
                 </tr>
@@ -271,25 +271,25 @@ const UserProgress: React.FC = () => {
       {showUserModal && userDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-96 overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Progress Details for {userDetails.user.name}</h3>
+            <h3 className="text-lg font-semibold mb-4">Détails de la progression pour {userDetails.user.name}</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <Card className="p-4">
-                <h4 className="font-medium mb-2">Overall Progress</h4>
+                <h4 className="font-medium mb-2">Progression globale</h4>
                 <div className="text-2xl font-bold text-blue-600">
                   {Math.round(userDetails.overall_progress)}%
                 </div>
               </Card>
               
               <Card className="p-4">
-                <h4 className="font-medium mb-2">Videos Completed</h4>
+                <h4 className="font-medium mb-2">Vidéos complétées</h4>
                 <div className="text-2xl font-bold text-green-600">
                   {userDetails.videos_completed} / {userDetails.total_videos_assigned}
                 </div>
               </Card>
             </div>
             
-            <h4 className="font-medium mb-4">Video Progress Details</h4>
+            <h4 className="font-medium mb-4">Détails de progression des vidéos</h4>
             <div className="space-y-3">
               {userDetails.progress_details.map((progress) => (
                 <div key={progress.video_id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -318,7 +318,7 @@ const UserProgress: React.FC = () => {
 
             <div className="flex justify-end mt-6">
               <Button onClick={() => setShowUserModal(false)}>
-                Close
+                Fermer
               </Button>
             </div>
           </div>

@@ -96,7 +96,7 @@ const CategoryAssignmentModal: React.FC<CategoryAssignmentModalProps> = ({
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-hidden">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Assign Categories to {user.username}
+            Assigner des catégories à {user.username}
           </h3>
           <button
             onClick={onClose}
@@ -112,7 +112,7 @@ const CategoryAssignmentModal: React.FC<CategoryAssignmentModalProps> = ({
             <input
               type="text"
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Search categories..."
+              placeholder="Rechercher des catégories..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -145,14 +145,14 @@ const CategoryAssignmentModal: React.FC<CategoryAssignmentModalProps> = ({
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              No categories found
+              Aucune catégorie trouvée
             </div>
           )}
         </div>
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            {selectedCategoryIds.length} categories selected
+            {selectedCategoryIds.length} catégories sélectionnées
           </p>
           <div className="flex space-x-3">
             <Button
@@ -160,13 +160,13 @@ const CategoryAssignmentModal: React.FC<CategoryAssignmentModalProps> = ({
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              Annuler
             </Button>
             <Button
               onClick={handleSave}
               disabled={loading}
             >
-              {loading ? 'Saving...' : 'Save Categories'}
+              {loading ? 'Enregistrement...' : 'Enregistrer les catégories'}
             </Button>
           </div>
         </div>
@@ -437,12 +437,12 @@ const loadCategories = async () => {
     <div className="space-y-6 lg:space-y-8">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600 mt-2">Manage student accounts and access permissions</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestion des utilisateurs</h1>
+          <p className="text-gray-600 mt-2">Gérez les comptes étudiants et les autorisations d'accès</p>
         </div>
         <Button onClick={() => setShowAddForm(true)} disabled={loading} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
-          Add New Student
+          Ajouter un nouvel étudiant
         </Button>
       </div>
 
@@ -486,7 +486,7 @@ const loadCategories = async () => {
               <UserCheck className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
             </div>
             <div className="ml-3 lg:ml-4">
-              <p className="text-xs lg:text-sm font-medium text-gray-600">Active</p>
+              <p className="text-xs lg:text-sm font-medium text-gray-600">Actifs</p>
               <p className="text-xl lg:text-2xl font-bold text-gray-900">
                 {statistics?.active_students || 0}
               </p>
@@ -500,7 +500,7 @@ const loadCategories = async () => {
               <Calendar className="h-5 w-5 lg:h-6 lg:w-6 text-yellow-600" />
             </div>
             <div className="ml-3 lg:ml-4">
-              <p className="text-xs lg:text-sm font-medium text-gray-600">Expiring</p>
+              <p className="text-xs lg:text-sm font-medium text-gray-600">Expirant bientôt</p>
               <p className="text-xl lg:text-2xl font-bold text-gray-900">
                 {statistics?.expiring_soon || 0}
               </p>
@@ -514,7 +514,7 @@ const loadCategories = async () => {
               <UserX className="h-5 w-5 lg:h-6 lg:w-6 text-red-600" />
             </div>
             <div className="ml-3 lg:ml-4">
-              <p className="text-xs lg:text-sm font-medium text-gray-600">Expired</p>
+              <p className="text-xs lg:text-sm font-medium text-gray-600">Expirés</p>
               <p className="text-xl lg:text-2xl font-bold text-gray-900">
                 {statistics?.expired_students || 0}
               </p>
@@ -528,7 +528,7 @@ const loadCategories = async () => {
               <Users className="h-5 w-5 lg:h-6 lg:w-6 text-gray-600" />
             </div>
             <div className="ml-3 lg:ml-4">
-              <p className="text-xs lg:text-sm font-medium text-gray-600">Inactive</p>
+              <p className="text-xs lg:text-sm font-medium text-gray-600">Inactifs</p>
               <p className="text-xl lg:text-2xl font-bold text-gray-900">
                 {statistics?.inactive_students || 0}
               </p>
@@ -542,7 +542,7 @@ const loadCategories = async () => {
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input
-              placeholder="Search by username, name, or email..."
+              placeholder="Rechercher par nom d'utilisateur, nom ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -553,11 +553,11 @@ const loadCategories = async () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="expired">Expired</option>
-              <option value="expiring_soon">Expiring Soon</option>
+              <option value="">Tous les statuts</option>
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+              <option value="expired">Expiré</option>
+              <option value="expiring_soon">Expire bientôt</option>
             </select>
           </div>
         </div>
@@ -568,30 +568,30 @@ const loadCategories = async () => {
         <Card className="p-4 lg:p-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
             <h2 className="text-lg lg:text-xl font-semibold text-gray-900">
-              {editingUser ? 'Edit Student' : 'Add New Student'}
+              {editingUser ? 'Modifier l\'étudiant' : 'Ajouter un nouvel étudiant'}
             </h2>
             <Button variant="ghost" onClick={resetForm}>
-              Cancel
+              Annuler
             </Button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Input
-                label="Username"
+                label="Nom d'utilisateur"
                 name="username"
                 value={formData.username}
                 onChange={handleInputChange}
-                placeholder="Enter username"
+                placeholder="Entrez le nom d'utilisateur"
                 required
               />
 
               <Input
-                label="Full Name"
+                label="Nom complet"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Enter full name (optional)"
+                placeholder="Entrez le nom complet (optionnel)"
               />
             </div>
 
@@ -602,23 +602,23 @@ const loadCategories = async () => {
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="Enter email (optional)"
+                placeholder="Entrez l'email (optionnel)"
               />
 
               <Input
-                label={editingUser ? "New Password (leave blank to keep current)" : "Password"}
+                label={editingUser ? "Nouveau mot de passe (laisser vide pour conserver l'actuel)" : "Mot de passe"}
                 name="password"
                 type="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="Enter password"
+                placeholder="Entrez le mot de passe"
                 required={!editingUser}
               />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Input
-                label="Access Start Date"
+                label="Date de début d'accès"
                 name="access_start"
                 type="date"
                 value={formData.access_start}
@@ -627,7 +627,7 @@ const loadCategories = async () => {
               />
 
               <Input
-                label="Access End Date"
+                label="Date de fin d'accès"
                 name="access_end"
                 type="date"
                 value={formData.access_end}
@@ -639,7 +639,7 @@ const loadCategories = async () => {
             {/* Categories Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assign Categories
+                Assigner des catégories
               </label>
               <div className="relative" ref={dropdownRef}>
                 <div
@@ -648,8 +648,8 @@ const loadCategories = async () => {
                 >
                   <span className={formData.category_ids.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
                     {formData.category_ids.length > 0
-                      ? `${formData.category_ids.length} categories selected`
-                      : 'Select categories'
+                      ? `${formData.category_ids.length} catégories sélectionnées`
+                      : 'Sélectionner des catégories'
                     }
                   </span>
                   <ChevronDown className={`h-4 w-4 text-gray-400 transform transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -663,7 +663,7 @@ const loadCategories = async () => {
                         <input
                           type="text"
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Search categories..."
+                          placeholder="Rechercher des catégories..."
                           value={categorySearch}
                           onChange={(e) => setCategorySearch(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
@@ -692,7 +692,7 @@ const loadCategories = async () => {
                         ))
                       ) : (
                         <div className="px-4 py-2 text-gray-500 text-sm">
-                          No categories found
+                          Aucune catégorie trouvée
                         </div>
                       )}
                     </div>
@@ -739,10 +739,10 @@ const loadCategories = async () => {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Button type="submit" disabled={loading} className="flex-1">
-                {loading ? 'Saving...' : editingUser ? 'Update Student' : 'Create Student'}
+                {loading ? 'Enregistrement...' : editingUser ? 'Mettre à jour l\'étudiant' : 'Créer l\'étudiant'}
               </Button>
               <Button type="button" variant="secondary" onClick={resetForm} className="flex-1">
-                Cancel
+                Annuler
               </Button>
             </div>
           </form>
@@ -752,13 +752,13 @@ const loadCategories = async () => {
       {/* Users Table */}
       <Card>
         <div className="px-4 lg:px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Student Accounts</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Comptes étudiants</h2>
         </div>
         
         {loading && (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Loading...</p>
+            <p className="mt-2 text-gray-600">Chargement...</p>
           </div>
         )}
 
@@ -767,14 +767,14 @@ const loadCategories = async () => {
             <div className="inline-flex items-center justify-center p-3 bg-gray-100 rounded-full mb-4">
               <Users className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Students Found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun étudiant trouvé</h3>
             <p className="text-gray-600 mb-4">
-              {searchTerm || statusFilter ? 'Try adjusting your search or filter criteria.' : 'Create your first student account to get started.'}
+              {searchTerm || statusFilter ? 'Essayez de modifier vos critères de recherche ou de filtre.' : 'Créez votre premier compte étudiant pour commencer.'}
             </p>
             {!searchTerm && !statusFilter && (
               <Button onClick={() => setShowAddForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add First Student
+                Ajouter le premier étudiant
               </Button>
             )}
           </div>
@@ -819,9 +819,9 @@ const loadCategories = async () => {
                   </div>
                   
                   <div className="text-xs text-gray-600 mb-3">
-                    <div>Start: {new Date(user.access_start).toLocaleDateString()}</div>
-                    <div>End: {new Date(user.access_end).toLocaleDateString()}</div>
-                    <div>Created: {new Date(user.created_at).toLocaleDateString()}</div>
+                    <div>Début : {new Date(user.access_start).toLocaleDateString()}</div>
+                    <div>Fin : {new Date(user.access_end).toLocaleDateString()}</div>
+                    <div>Créé : {new Date(user.created_at).toLocaleDateString()}</div>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -832,7 +832,7 @@ const loadCategories = async () => {
                       disabled={loading}
                     >
                       <Edit className="h-3 w-3 mr-1" />
-                      Edit
+                      Modifier
                     </Button>
                     <Button
                       size="sm"
@@ -841,7 +841,7 @@ const loadCategories = async () => {
                       disabled={loading}
                     >
                       <Tags className="h-3 w-3 mr-1" />
-                      Categories
+                      Catégories
                     </Button>
                     <Button
                       size="sm"
@@ -850,7 +850,7 @@ const loadCategories = async () => {
                       disabled={loading}
                     >
                       {user.is_active ? <UserX className="h-3 w-3 mr-1" /> : <UserCheck className="h-3 w-3 mr-1" />}
-                      {user.is_active ? 'Disable' : 'Enable'}
+                      {user.is_active ? 'Désactiver' : 'Activer'}
                     </Button>
                     {user.access_status === 'expiring_soon' && (
                       <Button
@@ -860,7 +860,7 @@ const loadCategories = async () => {
                         disabled={loading}
                       >
                         <Calendar className="h-3 w-3 mr-1" />
-                        +30d
+                        +30j
                       </Button>
                     )}
                     <Button
@@ -885,19 +885,19 @@ const loadCategories = async () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Student
+                    Étudiant
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contact
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Categories
+                    Catégories
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Access Period
+                    Période d'accès
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Statut
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -944,14 +944,14 @@ const loadCategories = async () => {
                               )}
                             </>
                           ) : (
-                            <span className="text-xs text-gray-500">No categories assigned</span>
+                            <span className="text-xs text-gray-500">Aucune catégorie assignée</span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
-                          <div>Start: {new Date(user.access_start).toLocaleDateString()}</div>
-                          <div>End: {new Date(user.access_end).toLocaleDateString()}</div>
+                          <div>Début : {new Date(user.access_start).toLocaleDateString()}</div>
+                          <div>Fin : {new Date(user.access_end).toLocaleDateString()}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -966,7 +966,7 @@ const loadCategories = async () => {
                             variant="ghost"
                             onClick={() => handleEdit(user)}
                             disabled={loading}
-                            title="Edit user"
+                            title="Modifier l'utilisateur"
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -975,7 +975,7 @@ const loadCategories = async () => {
                             variant="secondary"
                             onClick={() => handleCategoryAssignment(user)}
                             disabled={loading}
-                            title="Manage categories"
+                            title="Gérer les catégories"
                           >
                             <Tags className="h-3 w-3" />
                           </Button>
@@ -984,7 +984,7 @@ const loadCategories = async () => {
                             variant={user.is_active ? 'secondary' : 'primary'}
                             onClick={() => toggleUserStatus(user.id)}
                             disabled={loading}
-                            title={user.is_active ? 'Disable user' : 'Enable user'}
+                            title={user.is_active ? 'Désactiver l\'utilisateur' : 'Activer l\'utilisateur'}
                           >
                             {user.is_active ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
                           </Button>
@@ -994,7 +994,7 @@ const loadCategories = async () => {
                               variant="primary"
                               onClick={() => extendAccess(user.id, 30)}
                               disabled={loading}
-                              title="Extend access by 30 days"
+                              title="Prolonger l'accès de 30 jours"
                             >
                               <Calendar className="h-3 w-3" />
                             </Button>
@@ -1004,7 +1004,7 @@ const loadCategories = async () => {
                             variant="danger"
                             onClick={() => handleDelete(user.id)}
                             disabled={loading}
-                            title="Delete user"
+                            title="Supprimer l'utilisateur"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>

@@ -107,7 +107,7 @@ const AssignUsers: React.FC = () => {
     return (
       <div className="space-y-8">
         <div className="flex justify-center items-center h-64">
-          <div className="text-gray-600">Loading...</div>
+          <div className="text-gray-600">Chargement...</div>
         </div>
       </div>
     );
@@ -117,9 +117,9 @@ const AssignUsers: React.FC = () => {
     return (
       <div className="space-y-8">
         <div className="text-center py-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Category Not Found</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Catégorie introuvable</h2>
           <Button onClick={() => navigate('/admin/categories')}>
-            Go Back to Categories
+            Retour aux catégories
           </Button>
         </div>
       </div>
@@ -135,11 +135,11 @@ const AssignUsers: React.FC = () => {
           onClick={() => navigate('/admin/categories')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Categories
+          Retour aux catégories
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Assign Users</h1>
-          <p className="text-gray-600 mt-1">Category: <span className="font-medium">{category.name}</span></p>
+          <h1 className="text-3xl font-bold text-gray-900">Assigner des utilisateurs</h1>
+          <p className="text-gray-600 mt-1">Catégorie : <span className="font-medium">{category.name}</span></p>
         </div>
       </div>
 
@@ -151,9 +151,9 @@ const AssignUsers: React.FC = () => {
               <UsersIcon className="h-6 w-6 text-blue-600" />
             </div>
             <div className="ml-4">
-              <h3 className="text-lg font-semibold text-gray-900">User Assignment</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Assignation des utilisateurs</h3>
               <p className="text-gray-600">
-                {selectedUserIds.length} of {allUsers.length} users selected
+                {selectedUserIds.length} sur {allUsers.length} utilisateurs sélectionnés
               </p>
             </div>
           </div>
@@ -162,7 +162,7 @@ const AssignUsers: React.FC = () => {
             disabled={isSubmitting}
           >
             <Save className="h-4 w-4 mr-2" />
-            {isSubmitting ? 'Saving...' : 'Save Assignment'}
+            {isSubmitting ? 'Enregistrement...' : 'Enregistrer l\'assignation'}
           </Button>
         </div>
       </Card>
@@ -172,7 +172,7 @@ const AssignUsers: React.FC = () => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Search users..."
+          placeholder="Rechercher des utilisateurs..."
           className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -181,7 +181,7 @@ const AssignUsers: React.FC = () => {
 
       {/* Users List */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Users</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Sélectionner les utilisateurs</h2>
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {filteredUsers.map((user) => (
             <div
@@ -212,11 +212,11 @@ const AssignUsers: React.FC = () => {
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'
                   }`}>
-                    {user.is_active ? 'Active' : 'Inactive'}
+                    {user.is_active ? 'Actif' : 'Inactif'}
                   </span>
                   {new Date(user.access_expires_at) < new Date() && (
                     <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                      Expired
+                      Expiré
                     </span>
                   )}
                 </div>
@@ -225,7 +225,7 @@ const AssignUsers: React.FC = () => {
           ))}
           {filteredUsers.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              {searchTerm ? 'No users found matching your search.' : 'No users available.'}
+              {searchTerm ? 'Aucun utilisateur trouvé correspondant à votre recherche.' : 'Aucun utilisateur disponible.'}
             </div>
           )}
         </div>
