@@ -55,6 +55,7 @@ Route::group(['prefix' => 'admin'], function () {
         Route::patch('users/{user}/toggle-status', [UserManagementController::class, 'toggleStatus']);
         Route::patch('users/{user}/extend-access', [UserManagementController::class, 'extendAccess']);
         Route::post('users/{user}/assign-categories', [UserManagementController::class, 'assignCategories']);
+        Route::post('users/{user}/resend-credentials', [UserManagementController::class, 'resendCredentials']);
         Route::get('/profile', [AdminProfileController::class, 'show']);
         Route::put('/profile', [AdminProfileController::class, 'update']);
         Route::put('/profile/password', [AdminProfileController::class, 'updatePassword']);
