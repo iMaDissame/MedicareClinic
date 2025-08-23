@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 
 class AdminProfileController extends Controller
 {
@@ -156,7 +157,6 @@ class AdminProfileController extends Controller
                 ], 422);
             }
 
-            // Fix: Use manual assignment and save instead of update()
             $admin->password = Hash::make($request->new_password);
             $admin->save();
 
@@ -201,8 +201,7 @@ class AdminProfileController extends Controller
                 'total_categories' => \App\Models\Category::count(),
                 'total_comments' => \App\Models\Comment::count(),
                 'pending_comments' => \App\Models\Comment::where('is_approved', false)->count(),
-                // Fix: Replace notifications() with direct DB query
-                'admin_notifications' => \DB::table('notifications')->where('notifiable_id', $admin->id)->where('read_at', null)->count(),
+                'admin_notifications' => DB::table('notifications')->where('notifiable_id', $admin->id)->where('read_at', null)->count(),
             ];
 
             return response()->json([
@@ -236,7 +235,6 @@ class AdminProfileController extends Controller
 
             $activities = collect([]);
 
-            // If your models have a 'created_by' field, filter by admin
             $recentVideos = \App\Models\Video::where('created_by', $admin->id)->latest()->take(5)->get(['id', 'title', 'created_at']);
             foreach ($recentVideos as $video) {
                 $activities->push([

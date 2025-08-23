@@ -24,6 +24,7 @@ import Unauthorized from './pages/Unauthorized';
 import AdminChat from './pages/admin/AdminChat'; // Add this import
 import UserChat from './pages/UserChat'; // Add this import
 import AdminProfile from './pages/admin/AdminProfile';
+import UserProfile from './pages/UserProfile';
 
 
 
@@ -52,6 +53,8 @@ function App() {
 
             {/* Dashboard route */}
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="profile" element={<UserProfile />} />
+
 
             {/* Course player route */}
             <Route path="course/:courseId" element={<CoursePlayer />} />

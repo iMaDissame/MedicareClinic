@@ -10,6 +10,7 @@ use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\UserAuthController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\AdminProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserManagementController;
@@ -27,6 +28,11 @@ Route::get('videos/{video}', [VideoController::class, 'show']); // Public video 
 // Student Protected Routes
 Route::middleware('auth:api')->group(function () {
     Route::get('my-videos', [VideoController::class, 'getUserVideos']);
+    Route::get('profile', [UserProfileController::class, 'show']);
+    Route::put('profile', [UserProfileController::class, 'update']);
+    Route::put('profile/password', [UserProfileController::class, 'updatePassword']);
+    Route::get('profile/activity', [UserProfileController::class, 'getActivityLog']);
+    Route::get('user-progress/{user}', [ProgressController::class, 'getUserProgress']);
 
     // Comment routes for authenticated users
     Route::post('videos/{video}/comments', [VideoController::class, 'addComment']);

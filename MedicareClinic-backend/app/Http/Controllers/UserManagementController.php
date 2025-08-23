@@ -132,10 +132,10 @@ class UserManagementController extends Controller
             }
 
             $userData = $request->all();
-            
+
             // Store plain password for email before hashing
             $plainPassword = $userData['password'];
-            
+
             $userData['password'] = Hash::make($userData['password']);
             $userData['name'] = $userData['name'] ?? $userData['username'];
 
@@ -143,16 +143,16 @@ class UserManagementController extends Controller
 
             Log::info('User created successfully', ['user_id' => $user->id]);
 
-            // Send credentials email 
+            // Send credentials email
             try {
                 $frontendUrl = config('app.frontend_url', env('APP_FRONTEND_URL', 'http://localhost:5173'));
                 Mail::to($user->email)->send(new StudentCredentialsMail($user, $plainPassword, $frontendUrl));
-                
+
                 Log::info('Credentials email sent successfully', [
                     'user_id' => $user->id,
                     'email' => $user->email
                 ]);
-                
+
                 $emailStatus = ' and credentials sent via email';
             } catch (\Exception $e) {
                 Log::error('Failed to send credentials email', [
@@ -420,13 +420,13 @@ public function assignCategories(Request $request, User $user)
 
             // Generate a new temporary password if requested, or use a default message
             $shouldGenerateNewPassword = $request->input('generate_new_password', false);
-            
+
             if ($shouldGenerateNewPassword) {
                 // Generate a random password
                 $newPassword = $this->generateRandomPassword();
                 $user->password = Hash::make($newPassword);
                 $user->save();
-                
+
                 Log::info('New password generated for user', ['user_id' => $user->id]);
             } else {
                 // For security, we can't send the actual password, so generate a new one
@@ -437,7 +437,7 @@ public function assignCategories(Request $request, User $user)
 
             $frontendUrl = config('app.frontend_url', env('APP_FRONTEND_URL', 'http://localhost:5173'));
             Mail::to($user->email)->send(new StudentCredentialsMail($user, $newPassword, $frontendUrl));
-            
+
             Log::info('Credentials email resent successfully', [
                 'user_id' => $user->id,
                 'email' => $user->email
@@ -464,11 +464,11 @@ public function assignCategories(Request $request, User $user)
         $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
         $password = '';
         $characterLength = strlen($characters);
-        
+
         for ($i = 0; $i < $length; $i++) {
             $password .= $characters[rand(0, $characterLength - 1)];
         }
-        
+
         return $password;
     }
 }

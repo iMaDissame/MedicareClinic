@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\UserVideoProgress;
 use App\Models\User;
 use App\Models\Video;
 use Illuminate\Http\Request;
+use App\Models\UserVideoProgress;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProgressController extends Controller
 {
@@ -169,33 +170,35 @@ class ProgressController extends Controller
     }
 
 
-
     public function getUserStats($userId)
     {
         try {
             $user = User::findOrFail($userId);
 
-            // Calculate total watch time from progress
             $totalWatchTime = UserVideoProgress::where('user_id', $userId)
-                ->sum('watch_time');
+                ->join('videos', 'user_video_progress.video_id', '=', 'videos.id')
+                ->sum(DB::raw('(user_video_progress.progress / 100) * COALESCE(videos.duration, 0)'));
 
-            // Find favorite category
-            $favoriteCategory = Video::select('categories.name')
+            // Find favorite category based on most watched videos
+            $favoriteCategory = DB::table('user_video_progress')
+                ->join('videos', 'user_video_progress.video_id', '=', 'videos.id')
                 ->join('categories', 'videos.category_id', '=', 'categories.id')
-                ->join('user_video_progress', 'videos.id', '=', 'user_video_progress.video_id')
                 ->where('user_video_progress.user_id', $userId)
-                ->groupBy('categories.name')
+                ->where('user_video_progress.progress', '>', 0)
+                ->select('categories.name')
+                ->groupBy('categories.id', 'categories.name')
                 ->orderByRaw('COUNT(*) DESC')
                 ->value('categories.name');
 
             // Get last watched video
-            $lastWatched = Video::select('videos.*')
-                ->join('user_video_progress', 'videos.id', '=', 'user_video_progress.video_id')
+            $lastWatched = DB::table('user_video_progress')
+                ->join('videos', 'user_video_progress.video_id', '=', 'videos.id')
                 ->where('user_video_progress.user_id', $userId)
                 ->orderBy('user_video_progress.updated_at', 'DESC')
+                ->select('videos.id', 'videos.title', 'videos.description')
                 ->first();
 
-            // Calculate achievements (simplified example)
+            // Calculate achievements (completed videos count)
             $achievements = UserVideoProgress::where('user_id', $userId)
                 ->where('completed', true)
                 ->count();
@@ -203,13 +206,18 @@ class ProgressController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'totalWatchTime' => $totalWatchTime,
-                    'favoriteCategory' => $favoriteCategory,
-                    'lastWatched' => $lastWatched,
+                    'totalWatchTime' => $totalWatchTime ?: 0,
+                    'favoriteCategory' => $favoriteCategory ?: '',
+                    'lastWatched' => $lastWatched ? [
+                        'id' => $lastWatched->id,
+                        'title' => $lastWatched->title,
+                        'description' => $lastWatched->description
+                    ] : null,
                     'achievements' => $achievements
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('getUserStats error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch user stats',
