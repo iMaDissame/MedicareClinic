@@ -56,8 +56,8 @@ class CommentController extends Controller
             }
 
             $comments = Comment::with(['user:id,name,email', 'video:id,title'])
-                              ->orderBy('created_at', 'desc')
-                              ->paginate(20);
+                ->orderBy('created_at', 'desc')
+                ->paginate(20);
 
             return response()->json([
                 'success' => true,
@@ -91,11 +91,15 @@ class CommentController extends Controller
             $comment->update(['is_approved' => true]);
 
             // Load relationships for response
-            $comment->load(['user:id,name,email', 'video:id,title']);
+            $comment->load(['user:id,name,email', 'admin:id,name,email', 'video:id,title']);
 
             // Notify user about comment approval
             if ($comment->user_id) {
-                $this->notificationService->notifyCommentApproved($comment);
+                if ($comment->user_id || $comment->admin_id) {
+                    if ($comment->user_id || $comment->admin_id) {
+                        $this->notificationService->notifyCommentApproved($comment);
+                    }
+                }
             }
 
             return response()->json([
@@ -130,7 +134,7 @@ class CommentController extends Controller
             $comment->update(['is_approved' => false]);
 
             // Load relationships for response
-            $comment->load(['user:id,name,email', 'video:id,title']);
+            $comment->load(['user:id,name,email', 'admin:id,name,email', 'video:id,title']);
 
             // Notify user about comment rejection
             if ($comment->user_id) {
@@ -163,7 +167,9 @@ class CommentController extends Controller
             $regularUser = $this->getRegularUser();
 
             // Only admins or comment owners can delete comments
-            $canDelete = $adminUser || ($regularUser && $comment->user_id === $regularUser->id);
+            $canDelete = $adminUser ||
+                ($regularUser && $comment->user_id === $regularUser->id) ||
+                ($adminUser && $comment->admin_id === $adminUser->id);
 
             if (!$canDelete) {
                 return response()->json([
@@ -202,9 +208,9 @@ class CommentController extends Controller
             }
 
             $pendingComments = Comment::with(['user:id,name,email', 'video:id,title'])
-                                     ->where('is_approved', false)
-                                     ->orderBy('created_at', 'desc')
-                                     ->get();
+                ->where('is_approved', false)
+                ->orderBy('created_at', 'desc')
+                ->get();
 
             return response()->json([
                 'success' => true,
