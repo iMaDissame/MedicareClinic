@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Users, Plus, Edit, Trash2, UserCheck, UserX, Calendar, AlertCircle, Search, ChevronDown, Tags } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Plus, Edit, Trash2, UserCheck, UserX, Calendar, AlertCircle, Search, Tags } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
@@ -67,10 +67,11 @@ const CategoryAssignmentModal: React.FC<CategoryAssignmentModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-  if (user && user.categories) {
-    setSelectedCategoryIds(user.categories.map(cat => cat.id));
-  }
-}, [user]);
+    if (user && user.categories) {
+      setSelectedCategoryIds(user.categories.map(cat => cat.id));
+    }
+  }, [user]);
+
   const filteredCategories = categories.filter(category =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -92,81 +93,213 @@ const CategoryAssignmentModal: React.FC<CategoryAssignmentModalProps> = ({
   if (!isOpen || !user) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-hidden">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Assigner des catégories à {user.username}
-          </h3>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+              Assigner des catégories à {user.username}
+            </h3>
+            <p className="text-sm text-gray-600 mt-1 truncate">
+              {user.name && `${user.name} • `}{user.email}
+            </p>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="ml-4 text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
           >
-            <AlertCircle className="h-5 w-5" />
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
-        <div className="mb-4">
-          <div className="relative">
+        {/* Content */}
+        <div className="flex-1 overflow-hidden flex flex-col p-4 sm:p-6">
+          {/* Search Bar */}
+          <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               placeholder="Rechercher des catégories..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            )}
           </div>
-        </div>
 
-        <div className="max-h-64 overflow-y-auto mb-6">
-          {filteredCategories.length > 0 ? (
-            <div className="space-y-2">
-              {filteredCategories.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex items-center p-3 border border-gray-200 rounded hover:bg-gray-50"
-                >
-                  <input
-                    type="checkbox"
-                    id={`category-${category.id}`}
-                    checked={selectedCategoryIds.includes(category.id)}
-                    onChange={() => handleCategoryToggle(category.id)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label
-                    htmlFor={`category-${category.id}`}
-                    className="ml-3 text-sm font-medium text-gray-700 cursor-pointer"
-                  >
-                    {category.name}
-                  </label>
+          {/* Categories Grid */}
+          <div className="border border-gray-200 rounded-lg bg-gray-50 p-3 sm:p-4 flex-1 overflow-y-auto">
+            {filteredCategories.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
+                {filteredCategories.map((category) => {
+                  const isSelected = selectedCategoryIds.includes(category.id);
+                  return (
+                    <div
+                      key={category.id}
+                      className={`
+                        relative flex items-center p-3 sm:p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                        ${isSelected 
+                          ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                        }
+                      `}
+                      onClick={() => handleCategoryToggle(category.id)}
+                    >
+                      <div className="flex items-center w-full min-w-0">
+                        <div className="relative flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            id={`modal-category-${category.id}`}
+                            checked={isSelected}
+                            onChange={() => handleCategoryToggle(category.id)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          {isSelected && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-3 flex-1 min-w-0">
+                          <label
+                            htmlFor={`modal-category-${category.id}`}
+                            className={`text-sm font-medium cursor-pointer select-none block truncate ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}
+                          >
+                            {category.name}
+                          </label>
+                        </div>
+                        {isSelected && (
+                          <div className="ml-2 flex-shrink-0">
+                            <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12 sm:py-16">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-200 rounded-full mb-4">
+                  <Tags className="h-8 w-8 text-gray-400" />
                 </div>
-              ))}
+                <h3 className="text-sm font-medium text-gray-900 mb-1">
+                  {searchTerm ? 'Aucune catégorie trouvée' : 'Aucune catégorie disponible'}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  {searchTerm 
+                    ? `Aucun résultat pour "${searchTerm}"`
+                    : 'Veuillez d\'abord créer des catégories'
+                  }
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          {filteredCategories.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 pt-4 border-t border-gray-200 gap-3 sm:gap-0">
+              <div className="text-sm text-gray-600">
+                {selectedCategoryIds.length} sur {categories.length} catégorie{categories.length !== 1 ? 's' : ''}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {selectedCategoryIds.length !== categories.length && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategoryIds(categories.map(cat => cat.id))}
+                    className="text-xs px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors font-medium"
+                  >
+                    Tout sélectionner
+                  </button>
+                )}
+                {selectedCategoryIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategoryIds([])}
+                    className="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors font-medium"
+                  >
+                    Tout désélectionner
+                  </button>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              Aucune catégorie trouvée
+          )}
+
+          {/* Selected categories display */}
+          {selectedCategoryIds.length > 0 && (
+            <div className="mt-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="text-sm font-medium text-blue-900 mb-3">
+                Catégories sélectionnées ({selectedCategoryIds.length}) :
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {selectedCategoryIds.map(categoryId => {
+                  const category = categories.find(cat => cat.id === categoryId);
+                  return category ? (
+                    <span
+                      key={categoryId}
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-white text-blue-800 border border-blue-300 shadow-sm"
+                    >
+                      <span className="mr-2">{category.name}</span>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center w-4 h-4 text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-full transition-colors"
+                        onClick={() => handleCategoryToggle(categoryId)}
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </span>
+                  ) : null;
+                })}
+              </div>
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            {selectedCategoryIds.length} catégories sélectionnées
-          </p>
-          <div className="flex space-x-3">
+        {/* Footer */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6 border-t border-gray-200 gap-3 sm:gap-0">
+          <div className="text-sm text-gray-600 order-2 sm:order-1">
+            {selectedCategoryIds.length === 0 
+              ? 'Aucune catégorie sélectionnée'
+              : `${selectedCategoryIds.length} catégorie${selectedCategoryIds.length > 1 ? 's' : ''} sélectionnée${selectedCategoryIds.length > 1 ? 's' : ''}`
+            }
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-3 order-1 sm:order-2">
             <Button
               variant="secondary"
               onClick={onClose}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Annuler
             </Button>
             <Button
               onClick={handleSave}
               disabled={loading}
+              className="w-full sm:w-auto min-w-[140px]"
             >
-              {loading ? 'Enregistrement...' : 'Enregistrer les catégories'}
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Enregistrement...
+                </div>
+              ) : (
+                'Enregistrer les catégories'
+              )}
             </Button>
           </div>
         </div>
@@ -200,27 +333,14 @@ const UserManagement: React.FC = () => {
   });
 
   // Dropdown states for categories in form
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [categorySearch, setCategorySearch] = useState('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadUsers();
     loadStatistics();
     loadCategories();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, statusFilter]);
-
-  useEffect(() => {
-    // Close dropdown when clicking outside
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const loadUsers = async () => {
     try {
@@ -233,8 +353,9 @@ const UserManagement: React.FC = () => {
       
       const response = await axiosClient.get(`/admin/users?${params.toString()}`);
       setUsers(response.data.data || response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load users');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to load users');
       console.error('Error loading users:', err);
     } finally {
       setLoading(false);
@@ -247,7 +368,7 @@ const loadCategories = async () => {
     if (response.data.success) {
       setCategories(response.data.data);
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error loading categories:', err);
     // Optional: set a more specific error message
     setError('Failed to load categories. Please check if the admin API is running.');
@@ -258,7 +379,7 @@ const loadCategories = async () => {
     try {
       const response = await axiosClient.get('/admin/users/statistics');
       setStatistics(response.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading statistics:', err);
     }
   };
@@ -271,14 +392,17 @@ const loadCategories = async () => {
       setError(null);
 
       const submitData = { ...formData };
+      console.log('Submitting user data:', submitData);
 
       if (editingUser) {
         // Update existing user
         if (!submitData.password) {
-          delete submitData.password; // Don't send empty password
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { password: _, ...dataWithoutPassword } = submitData;
+          await axiosClient.put(`/admin/users/${editingUser.id}`, dataWithoutPassword);
+        } else {
+          await axiosClient.put(`/admin/users/${editingUser.id}`, submitData);
         }
-        
-        await axiosClient.put(`/admin/users/${editingUser.id}`, submitData);
       } else {
         // Create new user
         await axiosClient.post('/admin/users', submitData);
@@ -287,8 +411,10 @@ const loadCategories = async () => {
       await loadUsers();
       await loadStatistics();
       resetForm();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save user');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string; details?: Record<string, string[]> } } };
+      console.error('Full error response:', error.response?.data);
+      setError(error.response?.data?.error || 'Failed to save user');
       console.error('Error saving user:', err);
     } finally {
       setLoading(false);
@@ -337,8 +463,9 @@ const loadCategories = async () => {
       await axiosClient.delete(`/admin/users/${userId}`);
       await loadUsers();
       await loadStatistics();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete user');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to delete user');
       console.error('Error deleting user:', err);
     } finally {
       setLoading(false);
@@ -351,8 +478,9 @@ const loadCategories = async () => {
       await axiosClient.patch(`/admin/users/${userId}/toggle-status`);
       await loadUsers();
       await loadStatistics();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update user status');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to update user status');
       console.error('Error toggling user status:', err);
     } finally {
       setLoading(false);
@@ -367,8 +495,9 @@ const loadCategories = async () => {
       });
       await loadUsers();
       await loadStatistics();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to extend access');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to extend access');
       console.error('Error extending access:', err);
     } finally {
       setLoading(false);
@@ -397,8 +526,9 @@ const loadCategories = async () => {
       await loadUsers();
       setShowCategoryModal(false);
       setSelectedUserForCategories(null);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to assign categories');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to assign categories');
       console.error('Error assigning categories:', err);
     } finally {
       setCategoryLoading(false);
@@ -591,7 +721,8 @@ const loadCategories = async () => {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Entrez le nom complet (optionnel)"
+                placeholder="Entrez le nom complet"
+                required
               />
             </div>
 
@@ -602,7 +733,8 @@ const loadCategories = async () => {
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="Entrez l'email (optionnel)"
+                placeholder="Entrez l'email"
+                required
               />
 
               <Input
@@ -638,87 +770,163 @@ const loadCategories = async () => {
 
             {/* Categories Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Assigner des catégories
+                <span className="text-xs text-gray-500 ml-2">
+                  ({formData.category_ids.length} sélectionnée{formData.category_ids.length !== 1 ? 's' : ''})
+                </span>
               </label>
-              <div className="relative" ref={dropdownRef}>
-                <div
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer flex items-center justify-between min-h-[40px]"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                >
-                  <span className={formData.category_ids.length > 0 ? 'text-gray-900' : 'text-gray-500'}>
-                    {formData.category_ids.length > 0
-                      ? `${formData.category_ids.length} catégories sélectionnées`
-                      : 'Sélectionner des catégories'
-                    }
-                  </span>
-                  <ChevronDown className={`h-4 w-4 text-gray-400 transform transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                </div>
+              
+              {/* Search Bar */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  placeholder="Rechercher des catégories..."
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                />
+                {categorySearch && (
+                  <button
+                    type="button"
+                    onClick={() => setCategorySearch('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
 
-                {isDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-                    <div className="p-2">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <input
-                          type="text"
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Rechercher des catégories..."
-                          value={categorySearch}
-                          onChange={(e) => setCategorySearch(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                    </div>
-                    <div className="max-h-60 overflow-y-auto">
-                      {filteredCategoriesForForm.length > 0 ? (
-                        filteredCategoriesForForm.map((category) => (
-                          <div
-                            key={category.id}
-                            className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleCategoryInForm(category.id);
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData.category_ids.includes(category.id)}
-                              onChange={() => toggleCategoryInForm(category.id)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-3"
-                            />
-                            <span className="text-sm">{category.name}</span>
+              {/* Categories Grid */}
+              <div className="border border-gray-200 rounded-lg bg-gray-50 p-4 max-h-64 overflow-y-auto">
+                {filteredCategoriesForForm.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {filteredCategoriesForForm.map((category) => {
+                      const isSelected = formData.category_ids.includes(category.id);
+                      return (
+                        <div
+                          key={category.id}
+                          className={`
+                            relative flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md
+                            ${isSelected 
+                              ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                            }
+                          `}
+                          onClick={() => toggleCategoryInForm(category.id)}
+                        >
+                          <div className="flex items-center w-full">
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleCategoryInForm(category.id)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              {isSelected && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <div className="ml-3 flex-1">
+                              <span className={`text-sm font-medium select-none ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>
+                                {category.name}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <div className="ml-2">
+                                <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+                              </div>
+                            )}
                           </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-2 text-gray-500 text-sm">
-                          Aucune catégorie trouvée
                         </div>
-                      )}
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-200 rounded-full mb-4">
+                      <Tags className="h-8 w-8 text-gray-400" />
                     </div>
+                    <h3 className="text-sm font-medium text-gray-900 mb-1">
+                      {categorySearch ? 'Aucune catégorie trouvée' : 'Aucune catégorie disponible'}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {categorySearch 
+                        ? `Aucun résultat pour "${categorySearch}"`
+                        : 'Veuillez d\'abord créer des catégories'
+                      }
+                    </p>
                   </div>
                 )}
               </div>
-              {formData.category_ids.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {formData.category_ids.map(categoryId => {
-                    const category = categories.find(cat => cat.id === categoryId);
-                    return category ? (
-                      <span
-                        key={categoryId}
-                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+
+              {/* Action Buttons */}
+              {filteredCategoriesForForm.length > 0 && (
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
+                  <div className="text-xs text-gray-600">
+                    {formData.category_ids.length} sur {categories.length} catégorie{categories.length !== 1 ? 's' : ''}
+                  </div>
+                  <div className="flex space-x-2">
+                    {formData.category_ids.length < filteredCategoriesForForm.length && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allFilteredIds = filteredCategoriesForForm.map(cat => cat.id);
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            category_ids: [...new Set([...prev.category_ids, ...allFilteredIds])]
+                          }));
+                        }}
+                        className="text-xs px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors font-medium"
                       >
-                        {category.name}
-                        <button
-                          type="button"
-                          className="ml-1 inline-flex items-center justify-center w-4 h-4 text-blue-400 hover:text-blue-600"
-                          onClick={() => toggleCategoryInForm(categoryId)}
+                        Tout sélectionner
+                      </button>
+                    )}
+                    {formData.category_ids.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, category_ids: [] }))}
+                        className="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors font-medium"
+                      >
+                        Tout désélectionner
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Selected categories tags display */}
+              {formData.category_ids.length > 0 && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-xs font-medium text-blue-900 mb-2">Catégories sélectionnées :</div>
+                  <div className="flex flex-wrap gap-2">
+                    {formData.category_ids.map(categoryId => {
+                      const category = categories.find(cat => cat.id === categoryId);
+                      return category ? (
+                        <span
+                          key={categoryId}
+                          className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-white text-blue-800 border border-blue-300 shadow-sm"
                         >
-                          ×
-                        </button>
-                      </span>
-                    ) : null;
-                  })}
+                          <span className="mr-2">{category.name}</span>
+                          <button
+                            type="button"
+                            className="inline-flex items-center justify-center w-4 h-4 text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-full transition-colors"
+                            onClick={() => toggleCategoryInForm(categoryId)}
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
                 </div>
               )}
             </div>

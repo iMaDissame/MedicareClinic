@@ -115,13 +115,15 @@ class UserManagementController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'username' => 'required|string|max:255|unique:users',
-                'name' => 'nullable|string|max:255',
+                'username' => 'required|string|max:255',
+                'name' => 'required|string|max:255',
                 'email' => 'required|email|max:255|unique:users',
                 'password' => 'required|string|min:6',
                 'access_start' => 'required|date',
                 'access_end' => 'required|date|after:access_start',
                 'is_active' => 'boolean',
+                'category_ids' => 'nullable|array',
+                'category_ids.*' => 'exists:categories,id',
             ]);
 
             if ($validator->fails()) {
@@ -131,15 +133,21 @@ class UserManagementController extends Controller
                 ], 422);
             }
 
-            $userData = $request->all();
+            $userData = $request->except(['category_ids']);
 
             // Store plain password for email before hashing
             $plainPassword = $userData['password'];
 
             $userData['password'] = Hash::make($userData['password']);
             $userData['name'] = $userData['name'] ?? $userData['username'];
+            $userData['is_active'] = $userData['is_active'] ?? true;
 
             $user = User::create($userData);
+
+            // Assign categories if provided
+            if ($request->has('category_ids') && !empty($request->category_ids)) {
+                $user->categories()->sync($request->category_ids);
+            }
 
             Log::info('User created successfully', ['user_id' => $user->id]);
 
@@ -174,6 +182,12 @@ class UserManagementController extends Controller
                     'access_end' => $user->access_end->format('Y-m-d'),
                     'is_active' => $user->is_active,
                     'access_status' => $user->access_status,
+                    'categories' => $user->categories->map(function ($category) {
+                        return [
+                            'id' => $category->id,
+                            'name' => $category->name
+                        ];
+                    }),
                     'created_at' => $user->created_at->toISOString(),
                 ]
             ], 201);
@@ -218,13 +232,15 @@ class UserManagementController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'username' => 'sometimes|required|string|max:255|unique:users,username,' . $user->id,
-                'name' => 'sometimes|nullable|string|max:255',
-                'email' => 'sometimes|nullable|email|max:255|unique:users,email,' . $user->id,
+                'username' => 'sometimes|required|string|max:255',
+                'name' => 'sometimes|required|string|max:255',
+                'email' => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
                 'password' => 'sometimes|nullable|string|min:6',
                 'access_start' => 'sometimes|required|date',
                 'access_end' => 'sometimes|required|date|after:access_start',
                 'is_active' => 'sometimes|boolean',
+                'category_ids' => 'nullable|array',
+                'category_ids.*' => 'exists:categories,id',
             ]);
 
             if ($validator->fails()) {
@@ -234,7 +250,7 @@ class UserManagementController extends Controller
                 ], 422);
             }
 
-            $updateData = $request->all();
+            $updateData = $request->except(['category_ids']);
 
             // Hash password if provided
             if (isset($updateData['password'])) {
@@ -242,6 +258,11 @@ class UserManagementController extends Controller
             }
 
             $user->update($updateData);
+
+            // Update categories if provided
+            if ($request->has('category_ids')) {
+                $user->categories()->sync($request->category_ids ?? []);
+            }
 
             Log::info('User updated successfully', ['user_id' => $user->id]);
 
@@ -256,6 +277,12 @@ class UserManagementController extends Controller
                     'access_end' => $user->access_end ? $user->access_end->format('Y-m-d') : null,
                     'is_active' => $user->is_active,
                     'access_status' => $user->access_status,
+                    'categories' => $user->categories->map(function ($category) {
+                        return [
+                            'id' => $category->id,
+                            'name' => $category->name
+                        ];
+                    }),
                     'updated_at' => $user->updated_at->toISOString(),
                 ]
             ]);
@@ -372,7 +399,7 @@ public function assignCategories(Request $request, User $user)
 {
     try {
         $validator = Validator::make($request->all(), [
-            'category_ids' => 'required|array',
+            'category_ids' => 'array',
             'category_ids.*' => 'exists:categories,id',
         ]);
 
@@ -383,12 +410,12 @@ public function assignCategories(Request $request, User $user)
             ], 422);
         }
 
-        // Sync the categories for this user
-        $user->categories()->sync($request->category_ids);
+        // Sync the categories for this user (empty array will remove all categories)
+        $user->categories()->sync($request->category_ids ?? []);
 
         Log::info('Categories assigned to user successfully', [
             'user_id' => $user->id,
-            'category_ids' => $request->category_ids
+            'category_ids' => $request->category_ids ?? []
         ]);
 
         return response()->json([
