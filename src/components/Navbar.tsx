@@ -370,7 +370,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             >
               <div className="flex items-center mt-6">
               <img
-                src="https://imadissame.github.io/MedicareClinic/aa.png"
+                src="./aa2.png"
                 alt="Logo Medicare Clinic"
                 className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2"
               />

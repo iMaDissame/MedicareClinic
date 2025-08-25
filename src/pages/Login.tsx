@@ -29,62 +29,62 @@ const Login: React.FC = () => {
     );
   }
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-  setIsSubmitting(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsSubmitting(true);
 
-  console.group('🔐 Login Component - handleSubmit');
-  console.log('📝 Form submitted:', { username, passwordLength: password.length });
+    console.group('🔐 Login Component - handleSubmit');
+    console.log('📝 Form submitted:', { username, passwordLength: password.length });
 
-  try {
-    console.log('🔄 Calling auth.login()...');
-    const success = await login(username, password);
-    
-    if (success) {
-      // Get auth type from storage
-      const authType = localStorage.getItem('authType');
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-      
-      console.log('✅ Login successful:', { 
-        authType, 
-        user: currentUser,
-        from: from || 'none'
-      });
-      
-      // Determine redirect path based on auth type
-      let redirectPath;
-      
-      if (from && from !== '/login') {
-        redirectPath = from;
-        console.log('📍 Redirecting to intended destination:', redirectPath);
+    try {
+      console.log('🔄 Calling auth.login()...');
+      const success = await login(username, password);
+
+      if (success) {
+        // Get auth type from storage
+        const authType = localStorage.getItem('authType');
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+        console.log('✅ Login successful:', {
+          authType,
+          user: currentUser,
+          from: from || 'none'
+        });
+
+        // Determine redirect path based on auth type
+        let redirectPath;
+
+        if (from && from !== '/login') {
+          redirectPath = from;
+          console.log('📍 Redirecting to intended destination:', redirectPath);
+        } else {
+          redirectPath = authType === 'admin' ? '/admin' : '/app/dashboard';
+          console.log('📍 Redirecting to default path:', redirectPath);
+        }
+
+        navigate(redirectPath, { replace: true });
       } else {
-        redirectPath = authType === 'admin' ? '/admin' : '/app/dashboard';
-        console.log('📍 Redirecting to default path:', redirectPath);
+        console.warn('❌ Login failed - invalid credentials');
+        setError('Invalid credentials or access expired');
       }
-      
-      navigate(redirectPath, { replace: true });
-    } else {
-      console.warn('❌ Login failed - invalid credentials');
-      setError('Invalid credentials or access expired');
+    } catch (err: any) {
+      console.error('💥 Login error:', {
+        message: err.message,
+        stack: err.stack
+      });
+      setError('Login failed. Please try again.');
+    } finally {
+      console.groupEnd();
+      setIsSubmitting(false);
     }
-  } catch (err: any) {
-    console.error('💥 Login error:', {
-      message: err.message,
-      stack: err.stack
-    });
-    setError('Login failed. Please try again.');
-  } finally {
-    console.groupEnd();
-    setIsSubmitting(false);
-  }
-};
+  };
 
   // Only redirect if actually authenticated (not just loading)
   if (isAuthenticated && user) {
     const defaultPath = user.role === 'admin' ? '/admin' : '/app/dashboard';
     const redirectTo = from && from !== '/login' ? from : defaultPath;
-    
+
     return <Navigate to={redirectTo} replace />;
   }
 
@@ -93,9 +93,9 @@ const handleSubmit = async (e: React.FormEvent) => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img 
-              src="https://raw.githubusercontent.com/iMaDissame/MedicareClinic/main/MDClogo.png" 
-              alt="Medicare Clinic Logo" 
+            <img
+              src="./MDClogo.png"
+              alt="Medicare Clinic Logo"
               className="h-20 w-auto object-contain"
             />
           </div>
@@ -152,8 +152,8 @@ const handleSubmit = async (e: React.FormEvent) => {
 
           {/* Return to Landing Page Button */}
           <div className="mt-6 text-center">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="flex items-center justify-center gap-2 text-pink-600 hover:text-pink-700 font-medium"
             >
               <ArrowLeft className="h-4 w-4" />
