@@ -168,7 +168,8 @@ const AdminDashboard: React.FC = () => {
             <div className="text-center md:text-left">
               <h1 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2 flex items-center justify-center md:justify-start">
                 <Shield className="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3" />
-                Bienvenue, Administrateur {user.username} ! 👨‍💼
+                Bienvenue, Admin {user.username} ! 👩🏻‍⚕
+
               </h1>
               <p className="text-purple-100 text-base md:text-lg mb-3 md:mb-2">
                 Gérez votre plateforme d'apprentissage en toute simplicité
