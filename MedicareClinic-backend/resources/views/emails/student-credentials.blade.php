@@ -99,22 +99,21 @@
             font-size: 14px;
         }
         .security-note {
-            background-color: #fef3c7;
-            border: 1px solid #f59e0b;
+            background-color: #f0f9ff;
+            border: 1px solid #0ea5e9;
             border-radius: 6px;
             padding: 15px;
             margin: 20px 0;
         }
         .security-note strong {
-            color: #92400e;
+            color: #0369a1;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ asset('MDClogo.png') }}" alt="Medicare Clinic Logo" style="max-width: 200px; height: auto; margin-bottom: 15px;">
-            <div class="logo">Medicare Clinic</div>
+            <div class="logo">🏥 Medicare Clinic</div>
             <p style="color: #6b7280; margin: 0;">Plateforme de Formation Médicale</p>
         </div>
 
@@ -124,12 +123,12 @@
 
         <div class="credentials-box">
             <h3 style="margin-top: 0; color: #1f2937;">🔐 Vos identifiants de connexion :</h3>
-
+            
             <div class="credential-item">
                 <span class="credential-label">Nom d'utilisateur :</span>
                 <span class="credential-value">{{ $user->username }}</span>
             </div>
-
+            
             <div class="credential-item">
                 <span class="credential-label">Mot de passe :</span>
                 <span class="credential-value">{{ $password }}</span>
@@ -137,16 +136,16 @@
         </div>
 
         <div class="security-note">
-            <strong>🔒 Important - Sécurité :</strong><br>
-            Pour votre sécurité, vous devrez <strong>obligatoirement modifier votre mot de passe</strong> lors de votre première connexion. Cette mesure garantit la protection de votre compte et de vos données personnelles.
+            <strong>💡 Conseil :</strong><br>
+            Nous vous recommandons de personnaliser votre mot de passe lors de votre première connexion pour faciliter votre accès futur.
         </div>
 
         <div class="instructions">
             <h3>📚 Comment accéder à votre formation :</h3>
             <ol>
                 <li>Cliquez sur le bouton de connexion ci-dessous</li>
-                <li>Utilisez votre nom d'utilisateur et votre mot de passe temporaire</li>
-                <li><strong>Modifiez immédiatement votre mot de passe</strong> (obligatoire pour des raisons de sécurité)</li>
+                <li>Utilisez votre nom d'utilisateur et votre mot de passe</li>
+                <li>Personnalisez votre mot de passe si vous le souhaitez (recommandé)</li>
                 <li>Accédez à vos cours et ressources de formation</li>
             </ol>
         </div>
@@ -158,7 +157,7 @@
         @if($user->access_start && $user->access_end)
         <div style="background-color: #fdf2f8; border: 1px solid #ec4899; border-radius: 6px; padding: 15px; margin: 20px 0;">
             <strong style="color: #be185d;">📅 Période d'accès :</strong><br>
-            Du {{ \Carbon\Carbon::parse($user->access_start)->format('d/m/Y') }}
+            Du {{ \Carbon\Carbon::parse($user->access_start)->format('d/m/Y') }} 
             au {{ \Carbon\Carbon::parse($user->access_end)->format('d/m/Y') }}
         </div>
         @endif
