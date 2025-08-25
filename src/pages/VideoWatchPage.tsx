@@ -107,6 +107,7 @@ const VideoWatchPage: React.FC = () => {
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoError, setVideoError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -118,6 +119,8 @@ const VideoWatchPage: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [videoLoading, setVideoLoading] = useState(true);
+  const [isSkipping, setIsSkipping] = useState(false);
+  const [lastTap, setLastTap] = useState(0);
   
   // Comment actions state
   const [commentActions, setCommentActions] = useState<{[key: number]: 'approving' | 'rejecting' | null}>({});
@@ -249,6 +252,25 @@ const VideoWatchPage: React.FC = () => {
     };
   }, [video, currentUser]);
 
+  // Handle fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
   // Handle keyboard shortcuts - FIXED: Ignore when typing in form fields
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -297,23 +319,39 @@ const VideoWatchPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Add touch event handling for mobile play/pause - FIXED: Mobile button functionality
+  // FIXED: Mobile touch event handling with double-tap for fullscreen
   useEffect(() => {
     const videoElement = videoRef.current;
     if (!videoElement) return;
 
     const handleVideoTap = (e: TouchEvent) => {
       e.preventDefault();
-      togglePlayPause();
+      
+      const now = Date.now();
+      const DOUBLE_TAP_DELAY = 300;
+      
+      if (now - lastTap < DOUBLE_TAP_DELAY) {
+        // Double tap - toggle fullscreen
+        toggleFullscreen();
+      } else {
+        // Single tap - toggle play/pause
+        setTimeout(() => {
+          if (Date.now() - lastTap >= DOUBLE_TAP_DELAY) {
+            togglePlayPause();
+          }
+        }, DOUBLE_TAP_DELAY);
+      }
+      
+      setLastTap(now);
     };
 
     // Add touch event listener to the video element
-    videoElement.addEventListener('touchstart', handleVideoTap, { passive: false });
+    videoElement.addEventListener('touchend', handleVideoTap, { passive: false });
 
     return () => {
-      videoElement.removeEventListener('touchstart', handleVideoTap);
+      videoElement.removeEventListener('touchend', handleVideoTap);
     };
-  }, [isPlaying]);
+  }, [lastTap]);
 
   // Auto-hide controls
   const resetControlsTimeout = () => {
@@ -322,7 +360,7 @@ const VideoWatchPage: React.FC = () => {
     }
     setShowControls(true);
     controlsTimeoutRef.current = setTimeout(() => {
-      if (isPlaying) {
+      if (isPlaying && !showSettings) {
         setShowControls(false);
       }
     }, 3000);
@@ -521,17 +559,37 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
     }
   };
 
+  // FIXED: Skip functions with proper timing and state management
   const skipForward = () => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.min(
-      videoRef.current.currentTime + 10,
-      videoRef.current.duration
-    );
+    if (!videoRef.current || isSkipping) return;
+    
+    setIsSkipping(true);
+    const currentTimeStamp = videoRef.current.currentTime;
+    const newTime = Math.min(currentTimeStamp + 10, videoRef.current.duration);
+    
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+    
+    // Reset skipping state after a short delay
+    setTimeout(() => {
+      setIsSkipping(false);
+    }, 100);
   };
 
   const skipBackward = () => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 10, 0);
+    if (!videoRef.current || isSkipping) return;
+    
+    setIsSkipping(true);
+    const currentTimeStamp = videoRef.current.currentTime;
+    const newTime = Math.max(currentTimeStamp - 10, 0);
+    
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+    
+    // Reset skipping state after a short delay
+    setTimeout(() => {
+      setIsSkipping(false);
+    }, 100);
   };
 
   const adjustVolume = (change: number) => {
@@ -570,17 +628,45 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
     }
   };
 
+  // FIXED: Enhanced fullscreen function for mobile compatibility
   const toggleFullscreen = () => {
-    if (!videoRef.current) return;
+    const container = videoContainerRef.current;
+    const videoElement = videoRef.current;
     
-    if (!document.fullscreenElement) {
-      videoRef.current.requestFullscreen().catch(error => {
-        console.error('Error attempting to enable fullscreen:', error);
-      });
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+    if (!container || !videoElement) return;
+    
+    try {
+      if (!document.fullscreenElement) {
+        // Try different fullscreen methods for better mobile support
+        if (container.requestFullscreen) {
+          container.requestFullscreen();
+        } else if ((container as any).webkitRequestFullscreen) {
+          (container as any).webkitRequestFullscreen();
+        } else if ((container as any).mozRequestFullScreen) {
+          (container as any).mozRequestFullScreen();
+        } else if ((container as any).msRequestFullscreen) {
+          (container as any).msRequestFullscreen();
+        } else if ((videoElement as any).webkitEnterFullscreen) {
+          // iOS specific method for video fullscreen
+          (videoElement as any).webkitEnterFullscreen();
+        }
+        setIsFullscreen(true);
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen();
+        } else if ((document as any).mozCancelFullScreen) {
+          (document as any).mozCancelFullScreen();
+        } else if ((document as any).msExitFullscreen) {
+          (document as any).msExitFullscreen();
+        }
+        setIsFullscreen(false);
+      }
+    } catch (error) {
+      console.error('Error toggling fullscreen:', error);
+      showModal('Fullscreen Error', 'Unable to toggle fullscreen mode on this device.', 'error');
     }
   };
 
@@ -899,10 +985,13 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
               </div>
             </div>
           ) : videoUrl ? (
-            <div className="relative group" 
-                 onMouseMove={resetControlsTimeout}
-                 onMouseEnter={() => setShowControls(true)}
-                 onTouchStart={resetControlsTimeout}>
+            <div 
+              ref={videoContainerRef}
+              className="relative group" 
+              onMouseMove={resetControlsTimeout}
+              onMouseEnter={() => setShowControls(true)}
+              onTouchStart={resetControlsTimeout}
+            >
               {videoLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -914,9 +1003,9 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                 src={videoUrl}
                 poster={coverUrl}
                 preload="metadata"
-                onClick={togglePlayPause}
                 playsInline
                 controls={false}
+                webkit-playsinline="true"
               >
                 <source src={videoUrl} type="video/mp4" />
                 Your browser does not support the video tag.
@@ -947,7 +1036,7 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                 <div className="absolute inset-0 flex items-center justify-center">
                   <button
                     onClick={togglePlayPause}
-                    className="p-4 bg-black/50 hover:bg-black/70 rounded-full text-white transition-all duration-200 hover:scale-110"
+                    className="p-4 bg-black/50 hover:bg-black/70 rounded-full text-white transition-all duration-200 hover:scale-110 touch-manipulation"
                   >
                     {isPlaying ? (
                       <Pause className="h-8 w-8" />
@@ -957,15 +1046,28 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                   </button>
                 </div>
 
+                {/* Mobile fullscreen hint */}
+                <div className="absolute top-4 left-4 md:hidden">
+                  <div className="bg-black/50 rounded-full p-2 text-white text-xs">
+                    Double-tap for fullscreen
+                  </div>
+                </div>
+
                 {/* Bottom Controls */}
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   {/* Progress Bar */}
                   <div className="mb-4">
                     <div 
-                      className="w-full h-2 bg-white/30 rounded-full cursor-pointer group/progress"
+                      className="w-full h-2 bg-white/30 rounded-full cursor-pointer group/progress touch-manipulation"
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         const percentage = ((e.clientX - rect.left) / rect.width) * 100;
+                        seekTo(percentage);
+                      }}
+                      onTouchEnd={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const touch = e.changedTouches[0];
+                        const percentage = ((touch.clientX - rect.left) / rect.width) * 100;
                         seekTo(percentage);
                       }}
                     >
@@ -982,7 +1084,8 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                       {/* Skip Backward */}
                       <button
                         onClick={skipBackward}
-                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                        disabled={isSkipping}
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors disabled:opacity-50 touch-manipulation"
                         title="Skip backward 10s"
                       >
                         <SkipBack className="h-5 w-5" />
@@ -991,7 +1094,7 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                       {/* Play/Pause */}
                       <button
                         onClick={togglePlayPause}
-                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors touch-manipulation"
                       >
                         {isPlaying ? (
                           <Pause className="h-5 w-5" />
@@ -1003,14 +1106,15 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                       {/* Skip Forward */}
                       <button
                         onClick={skipForward}
-                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                        disabled={isSkipping}
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors disabled:opacity-50 touch-manipulation"
                         title="Skip forward 10s"
                       >
                         <SkipForward className="h-5 w-5" />
                       </button>
 
                       {/* Volume Control */}
-                      <div className="flex items-center space-x-2 group/volume">
+                      <div className="hidden md:flex items-center space-x-2 group/volume">
                         <button
                           onClick={toggleMute}
                           className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
@@ -1043,14 +1147,14 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                       </div>
 
                       {/* Time Display */}
-                      <span className="text-white text-sm font-mono">
+                      <span className="text-white text-sm font-mono hidden sm:block">
                         {formatDuration(currentTime)} / {formatDuration(duration)}
                       </span>
                     </div>
 
                     <div className="flex items-center space-x-2">
                       {/* Settings */}
-                      <div className="relative">
+                      <div className="relative hidden md:block">
                         <button
                           onClick={() => setShowSettings(!showSettings)}
                           className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
@@ -1085,7 +1189,7 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                       {/* Fullscreen */}
                       <button
                         onClick={toggleFullscreen}
-                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors"
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors touch-manipulation"
                         title="Fullscreen"
                       >
                         <Maximize className="h-5 w-5" />
@@ -1125,18 +1229,30 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                   <span>Durée : {formatDuration(video.duration)}</span>
                 </div>
               )}
-              
             </div>
 
             {/* Keyboard Shortcuts Info */}
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Raccourcis clavier</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600">
-                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">Espace</kbd> Lecture/Pause</div>
-                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">←/→</kbd> Reculer/Avancer 10s</div>
-                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">↑/↓</kbd> Volume</div>
-                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">F</kbd> Plein écran</div>
-                <div><kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">M</kbd> Muet</div>
+              <h4 className="text-sm font-medium text-gray-900 mb-2">Contrôles</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-gray-600">
+                <div className="md:hidden">
+                  <strong>Mobile:</strong> Tap to play/pause • Double-tap for fullscreen
+                </div>
+                <div className="hidden md:block">
+                  <kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">Espace</kbd> Lecture/Pause
+                </div>
+                <div className="hidden md:block">
+                  <kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">←/→</kbd> Reculer/Avancer 10s
+                </div>
+                <div className="hidden md:block">
+                  <kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">↑/↓</kbd> Volume
+                </div>
+                <div className="hidden md:block">
+                  <kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">F</kbd> Plein écran
+                </div>
+                <div className="hidden md:block">
+                  <kbd className="px-1 py-0.5 bg-white rounded border text-gray-800">M</kbd> Muet
+                </div>
               </div>
             </div>
             

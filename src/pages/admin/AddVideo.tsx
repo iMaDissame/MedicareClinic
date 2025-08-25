@@ -38,7 +38,7 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, videoTitle
         <div className="text-center">
           <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Vidéo téléchargée avec succès !</h3>
-          <p className="text-gray-600 mb-6">"{videoTitle}" a été téléchargée sur Cloudinary et ajoutée à votre bibliothèque de vidéos.</p>
+          <p className="text-gray-600 mb-6">"{videoTitle}" a été ajoutée à votre bibliothèque de vidéos.</p>
           <div className="flex space-x-3">
             <Button onClick={onClose} className="flex-1">
               Voir les vidéos
@@ -243,15 +243,15 @@ const AddVideo: React.FC = () => {
   const getUploadPhaseMessage = () => {
     switch (uploadPhase) {
       case 'preparing':
-        return 'Preparing upload...';
+        return 'Préparation du téléchargement...';
       case 'uploading':
-        return `Uploading to Cloudinary... ${uploadProgress}%`;
+        return `Téléchargement... ${uploadProgress}%`;
       case 'processing':
-        return 'Processing video...';
+        return 'Traitement de la vidéo...';
       case 'finalizing':
-        return 'Finalizing...';
+        return 'Finalisation...';
       default:
-        return 'Uploading...';
+        return 'Téléchargement...';
     }
   };
 
@@ -287,7 +287,7 @@ const AddVideo: React.FC = () => {
       uploadData.append('category_id', selectedCategory.id.toString());
       uploadData.append('is_published', formData.is_published ? '1' : '0');
 
-      console.log('Submitting video for Cloudinary upload:', {
+      console.log('Submitting video for upload:', {
         title: formData.title,
         description: formData.description,
         category_id: selectedCategory.id,
@@ -310,7 +310,7 @@ const AddVideo: React.FC = () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 600000, // 10 minutes timeout for Cloudinary upload
+        timeout: 600000, // 10 minutes timeout
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percentCompleted = Math.round(
@@ -334,11 +334,10 @@ const AddVideo: React.FC = () => {
         setUploadProgress(100);
         setUploadPhase('finalizing');
         
-        console.log('Video uploaded successfully to Cloudinary:', {
+        console.log('Video uploaded successfully:', {
           video_id: response.data.data?.id,
-          cloudinary_url: response.data.data?.cloudinary_url,
-          cloudinary_public_id: response.data.data?.cloudinary_public_id,
-          cover_cloudinary_url: response.data.data?.cover_cloudinary_url,
+          url: response.data.data?.url,
+          cover_url: response.data.data?.cover_url,
           duration: response.data.data?.duration,
           file_size: response.data.data?.file_size
         });
@@ -348,7 +347,7 @@ const AddVideo: React.FC = () => {
         }, 500);
       } else {
         setErrorDetails({
-          message: response.data.message || 'Failed to upload video to Cloudinary',
+          message: response.data.message || 'Failed to upload video',
           status: response.status,
           details: response.data,
           requestData: {
@@ -363,12 +362,12 @@ const AddVideo: React.FC = () => {
         setShowErrorModal(true);
       }
     } catch (error: any) {
-      console.error('Failed to upload video to Cloudinary:', error);
+      console.error('Failed to upload video:', error);
 
       const errorInfo = {
         message: error.code === 'ECONNABORTED'
-          ? 'Upload timeout - Cloudinary upload took too long. Please try with a smaller file or check your connection.'
-          : error.response?.data?.message || error.message || 'Unknown error occurred during Cloudinary upload',
+          ? 'Upload timeout - upload took too long. Please try with a smaller file or check your connection.'
+          : error.response?.data?.message || error.message || 'Unknown error occurred during upload',
         status: error.response?.status,
         details: error.response?.data,
         validationErrors: error.response?.data?.errors,
@@ -402,20 +401,20 @@ const AddVideo: React.FC = () => {
   const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Updated file type validation for Cloudinary supported formats
+      // Updated file type validation for supported formats
       const allowedTypes = [
         'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm',
         'video/flv', 'video/mkv', 'video/m4v', 'video/3gp'
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert('Please select a valid video file (MP4, AVI, MOV, WMV, WebM, FLV, MKV, M4V, 3GP)');
+        alert('Veuillez sélectionner un fichier vidéo valide (MP4, AVI, MOV, WMV, WebM, FLV, MKV, M4V, 3GP)');
         return;
       }
 
-      // Increased file size limit for Cloudinary (supports larger files)
+      // Increased file size limit (supports larger files)
       const maxSize = 4 * 1024 * 1024 * 1024; // 4GB
       if (file.size > maxSize) {
-        alert('File size must be less than 4GB');
+        alert('La taille du fichier doit être inférieure à 4GB');
         return;
       }
 
@@ -426,17 +425,17 @@ const AddVideo: React.FC = () => {
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type for Cloudinary image formats
+      // Validate file type for image formats
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Please select a valid image file (JPEG, JPG, PNG, WebP, GIF)');
+        alert('Veuillez sélectionner un fichier image valide (JPEG, JPG, PNG, WebP, GIF)');
         return;
       }
 
       // Validate file size
       const maxSize = 20 * 1024 * 1024; // 20MB for images
       if (file.size > maxSize) {
-        alert('Image size must be less than 20MB');
+        alert('La taille de l\'image doit être inférieure à 20MB');
         return;
       }
 
@@ -587,7 +586,7 @@ const AddVideo: React.FC = () => {
           {/* Cover Image Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Image de couverture * <span className="text-xs text-gray-500">(Sera téléchargée sur Cloudinary)</span>
+              Image de couverture *
             </label>
             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors">
               <div className="space-y-1 text-center">
@@ -613,15 +612,15 @@ const AddVideo: React.FC = () => {
                 <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF jusqu'à 20MB</p>
                 {formData.cover_image && (
                   <div className="mt-2 relative bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-center space-x-2">
-                      <Image className="h-4 w-4 text-green-600" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-green-700 font-medium truncate">
+                    <div className="flex items-start space-x-2">
+                      <Image className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="text-sm text-green-700 font-medium break-all">
                           {formData.cover_image.name}
                         </p>
-                        <div className="flex items-center space-x-4 text-xs text-green-600">
+                        <div className="flex items-center space-x-4 text-xs text-green-600 mt-1">
                           <span className="flex items-center">
-                            <HardDrive className="h-3 w-3 mr-1" />
+                            <HardDrive className="h-3 w-3 mr-1 flex-shrink-0" />
                             {formatFileSize(formData.cover_image.size)}
                           </span>
                         </div>
@@ -629,7 +628,7 @@ const AddVideo: React.FC = () => {
                       <button
                         type="button"
                         onClick={removeCoverImage}
-                        className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors flex-shrink-0"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -643,7 +642,7 @@ const AddVideo: React.FC = () => {
           {/* Video File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fichier vidéo * <span className="text-xs text-gray-500">(Sera téléchargé sur Cloudinary)</span>
+              Fichier vidéo *
             </label>
             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors">
               <div className="space-y-1 text-center">
@@ -669,24 +668,24 @@ const AddVideo: React.FC = () => {
                 <p className="text-xs text-gray-500">MP4, AVI, MOV, WMV, WebM et plus jusqu'à 4GB</p>
                 {formData.video_file && (
                   <div className="mt-2 relative bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-center space-x-2">
-                      <Video className="h-4 w-4 text-green-600 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-green-700 font-medium truncate">
+                    <div className="flex items-start space-x-2">
+                      <Video className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="text-sm text-green-700 font-medium break-all">
                           {formData.video_file.name}
                         </p>
-                        <div className="flex items-center space-x-4 text-xs text-green-600">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-xs text-green-600 mt-1">
                           <span className="flex items-center">
-                            <HardDrive className="h-3 w-3 mr-1" />
+                            <HardDrive className="h-3 w-3 mr-1 flex-shrink-0" />
                             {formatFileSize(formData.video_file.size)}
                           </span>
-                          <span className="text-blue-600">Ready for Cloudinary upload</span>
+                          <span className="text-blue-600">Prêt pour le téléchargement</span>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={removeVideoFile}
-                        className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors flex-shrink-0"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -791,27 +790,6 @@ const AddVideo: React.FC = () => {
           </Button>
         </Card>
       )}
-
-      {/* Cloudinary Information Card */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <Video className="h-4 w-4 text-blue-600" />
-            </div>
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-blue-900 mb-2">Téléchargement vidéo Cloudinary</h3>
-            <div className="text-blue-800 text-sm space-y-1">
-              <p>• Les vidéos sont automatiquement optimisées et stockées sur Cloudinary</p>
-              <p>• Plusieurs formats vidéo sont pris en charge (jusqu'à 4GB)</p>
-              <p>• Les images de couverture sont également téléchargées sur Cloudinary pour une diffusion cohérente</p>
-              <p>• La durée et la taille du fichier vidéo sont détectées automatiquement</p>
-              <p>• Tous les fichiers médias seront accessibles via des URLs Cloudinary sécurisées</p>
-            </div>
-          </div>
-        </div>
-      </Card>
 
       <SuccessModal
         isOpen={showSuccessModal}
