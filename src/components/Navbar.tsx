@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import Button from './ui/Button';
 import axiosClient from '../services/axiosClient';
+import logo from '../assets/aa2.png';
 
 interface NavbarProps {
   onMenuClick?: () => void;
@@ -369,11 +370,11 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
               className="flex items-center space-x-2"
             >
               <div className="flex items-center mt-6">
-              <img
-                src="./aa2.png"
-                alt="Logo Medicare Clinic"
-                className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2"
-              />
+                <img
+                  src={logo}
+                  alt="Logo Medicare Clinic"
+                  className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2"
+                />
               </div>
               {/* <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent hidden sm:block">
               MediCare

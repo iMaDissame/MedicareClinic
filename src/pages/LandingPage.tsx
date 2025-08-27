@@ -4,6 +4,8 @@ import {
   CheckCircle, Menu, X, Play, Clock, Star, BookOpen, Zap, Users, Award, Droplets
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import logo from '../assets/aa2.png';
+import logoesthetique from '../assets/Landing.avif';
 
 const LandingPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -538,7 +540,7 @@ const LandingPage: React.FC = () => {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center mt-6">
               <img
-                src="./aa2.png"
+                src={logo}
                 alt="Logo Medicare Clinic"
                 className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2"
               />
@@ -632,7 +634,8 @@ const LandingPage: React.FC = () => {
         </div>
         <div className="md:w-1/2 relative">
           <div className="bg-gradient-to-br from-pink-400 to-rose-500 rounded-lg overflow-hidden shadow-xl transform -rotate-2">
-            <img src="./Landing.avif" alt="Formation esthétique" className="w-full h-auto opacity-90" />          </div>
+            <img src={logoesthetique} alt="Formation esthétique" className="w-full h-auto opacity-90" />
+          </div>
           <div className="absolute -bottom-6 -right-6 bg-white rounded-lg p-4 shadow-lg">
             <p className="font-medium text-gray-900">Rejoignez notre Académie Clinique Esthétique</p>
             <div className="flex mt-2">

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { AlertCircle, User, Lock, ArrowLeft, Loader2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import logoimagelogin from '../assets/MDClogo.png';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -94,7 +95,7 @@ const Login: React.FC = () => {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <img
-              src="./MDClogo.png"
+              src={logoimagelogin}
               alt="Medicare Clinic Logo"
               className="h-20 w-auto object-contain"
             />
