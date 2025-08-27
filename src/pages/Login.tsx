@@ -21,7 +21,7 @@ const Login: React.FC = () => {
   // Show loading spinner while checking stored authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex items-center space-x-3">
           <Loader2 className="h-6 w-6 animate-spin text-pink-600" />
           <span className="text-gray-600">Checking authentication...</span>
@@ -90,7 +90,7 @@ const Login: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
