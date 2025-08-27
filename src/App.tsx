@@ -31,7 +31,7 @@ import UserProfile from './pages/UserProfile';
 function App() {
   return (
     <AuthProvider>
-      <Router basename="/MedicareClinic">
+      <Router>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
