@@ -11,7 +11,7 @@ const UserChat: React.FC = () => (
               <svg className="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
-              Support Étudiant
+              Support Client
             </h1>
             <p className="text-blue-100 text-base md:text-lg mb-3 md:mb-2">
               Obtenez de l'aide de notre équipe de support dédiée
@@ -42,38 +42,14 @@ const UserChat: React.FC = () => (
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-1 text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>En ligne</span>
-            </div>
-            <div className="text-sm text-gray-500">• Temps de réponse: &lt;5 min</div>
+            {/* Online status and response time removed as requested */}
           </div>
         </div>
       </div>
       
       <ChatSection />
       
-      <div className="mt-8 bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Questions fréquentes</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-700 mb-2">Problèmes de connexion</h4>
-            <p className="text-sm text-blue-600">Vous ne parvenez pas à accéder à votre compte ?</p>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-700 mb-2">Problèmes vidéo</h4>
-            <p className="text-sm text-blue-600">Les vidéos ne se chargent pas correctement ?</p>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-700 mb-2">Questions de contenu</h4>
-            <p className="text-sm text-blue-600">Vous avez des questions sur le matériel de cours ?</p>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-medium text-blue-700 mb-2">Problèmes techniques</h4>
-            <p className="text-sm text-blue-600">Besoin d'aide avec les fonctionnalités de la plateforme ?</p>
-          </div>
-        </div>
-      </div>
+  {/* Questions fréquentes section removed as requested */}
     </div>
   </div>
 );

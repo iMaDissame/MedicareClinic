@@ -150,7 +150,7 @@ const UserProfile: React.FC = () => {
 
   useEffect(() => {
     fetchProfile();
-    fetchStatistics();
+    // fetchStatistics();
     fetchActivities();
   }, []);
 

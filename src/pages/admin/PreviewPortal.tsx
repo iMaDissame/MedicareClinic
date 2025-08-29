@@ -145,7 +145,7 @@ const PreviewPortal: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-2 md:px-6">
       {/* Preview Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
@@ -159,7 +159,7 @@ const PreviewPortal: React.FC = () => {
       </div>
 
       {/* Student Dashboard Preview */}
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6 rounded-xl">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-2 md:p-6 rounded-xl">
         <div className="max-w-7xl mx-auto">
           {/* Welcome Header */}
           <div className="mb-8">
@@ -182,7 +182,7 @@ const PreviewPortal: React.FC = () => {
           </div>
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
             <Card className="p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
               <div className="flex items-center">
                 <div className="p-3 bg-blue-100 rounded-xl">
@@ -219,7 +219,7 @@ const PreviewPortal: React.FC = () => {
           </div>
 
           {/* Video Grid */}
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {videos.map((video) => (
               <VideoCard
                 key={video.id}

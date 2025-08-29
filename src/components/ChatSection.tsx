@@ -3,7 +3,7 @@ import { getChats, getChatMessages, sendChatMessage } from '../services/axiosCli
 import axiosClient from '../services/axiosClient';
 import Button from './ui/Button';
 import Card from './ui/Card';
-import { MessageCircle, Send, User, Users, Clock, AlertCircle, Search, MoreVertical, Phone, Video, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Send, User, Users, Clock, AlertCircle, Search, MoreVertical, ArrowLeft } from 'lucide-react';
 
 interface ChatPartner {
   id: string;
@@ -230,7 +230,7 @@ const ChatSection = () => {
             <div className="flex items-center space-x-4">
               <div className="text-center lg:text-right">
                 <p className="text-sm text-pink-600">
-                  {isAdmin ? 'Utilisateurs actifs' : 'Agents disponibles'}
+                  {isAdmin ? 'Utilisateurs inscrits' : 'Agents de support'}
                 </p>
                 <p className="text-2xl font-bold text-pink-700">
                   {isAdmin ? users.length : admins.length}
@@ -266,7 +266,7 @@ const ChatSection = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-pink-600">
-                  {isAdmin ? 'Utilisateurs actifs' : 'Agents en ligne'}
+                  {isAdmin ? 'Utilisateurs inscrits' : 'Agents de support'}
                 </p>
                 <p className="text-2xl font-bold text-pink-700">
                   {isAdmin ? users.length : admins.length}
@@ -306,22 +306,12 @@ const ChatSection = () => {
                           {selectedPartner.username || selectedPartner.name}
                         </h3>
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                          <span className="text-sm text-pink-600 font-medium">
-                            En ligne {isAdmin ? '' : '• Agent de support'}
-                          </span>
+                          {/* Online status removed as requested */}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-full transition-colors">
-                        <Phone className="h-5 w-5" />
-                      </button>
-                      <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-full transition-colors">
-                        <Video className="h-5 w-5" />
-                      </button>
-                    </div>
+                    {/* Removed phone and video call icons for mobile chat header */}
                   </div>
                 </div>
 
@@ -368,14 +358,15 @@ const ChatSection = () => {
 
                 {/* Mobile Input Area */}
                 <div className="p-4 border-t border-pink-200 bg-white">
-                  <div className="flex items-end space-x-3">
-                    <div className="flex-1 min-h-[40px] max-h-32 bg-gradient-to-r from-pink-50 to-rose-100 rounded-full px-4 py-2 flex items-center border-2 border-pink-200">
+                  <div className="flex items-end space-x-2 pb-1 w-full">
+                    <div className="flex-1 min-h-[40px] max-h-32 bg-gradient-to-r from-pink-50 to-rose-100 rounded-full px-3 py-2 flex items-center border-2 border-pink-200 w-full">
                       <input
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Tapez votre message..."
-                        className="flex-1 bg-transparent border-none outline-none placeholder-pink-400 text-sm font-medium"
+                        className="flex-1 bg-transparent border-none outline-none placeholder-pink-400 text-sm font-medium w-full"
+                        style={{ minWidth: 0 }}
                       />
                     </div>
                     <button
@@ -386,6 +377,7 @@ const ChatSection = () => {
                           ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white hover:from-pink-600 hover:to-rose-600 shadow-pink-200'
                           : 'bg-gray-200 text-gray-400'
                       }`}
+                      style={{ minWidth: 44, minHeight: 44, marginRight: 2 }}
                     >
                       <Send className="h-5 w-5" />
                     </button>
@@ -439,7 +431,7 @@ const ChatSection = () => {
                           <div className="w-12 h-12 bg-gradient-to-r from-pink-400 to-rose-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:from-pink-500 group-hover:to-rose-600">
                             {(partner.username || partner.name || '').charAt(0).toUpperCase()}
                           </div>
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full animate-pulse"></div>
+                          {/* Activity status dot removed as requested */}
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -524,7 +516,7 @@ const ChatSection = () => {
                             }`}>
                               {(partner.username || partner.name || '').charAt(0).toUpperCase()}
                             </div>
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 border-2 border-white rounded-full animate-pulse"></div>
+                            {/* Activity status removed as requested */}
                           </div>
 
                           <div className="flex-1 min-w-0">
@@ -565,27 +557,13 @@ const ChatSection = () => {
                             {selectedPartner.username || selectedPartner.name}
                           </h3>
                           <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                            <span className="text-sm text-pink-600 font-medium">
-                              En ligne {isAdmin ? '' : '• Agent de support'}
-                            </span>
+                            {/* Online status removed as requested */}
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-2">
-                        <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-xl transition-colors duration-200">
-                          <Phone className="h-5 w-5" />
-                        </button>
-                        <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-xl transition-colors duration-200">
-                          <Video className="h-5 w-5" />
-                        </button>
-                        <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-xl transition-colors duration-200">
-                          <MoreVertical className="h-5 w-5" />
-                        </button>
-                        <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-xl transition-colors duration-200">
-                          <MoreVertical className="h-5 w-5" />
-                        </button>
+                        
                       </div>
                     </div>
                   </div>
