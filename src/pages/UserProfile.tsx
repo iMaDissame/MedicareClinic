@@ -167,22 +167,21 @@ const UserProfile: React.FC = () => {
         });
       }
     } catch (error: any) {
-      console.error('Failed to fetch profile:', error);
       setErrorMessage('Impossible de charger les données du profil');
       setShowErrorModal(true);
     }
   };
 
-  const fetchStatistics = async () => {
-    try {
-      const response = await axiosClient.get('/profile/statistics');
-      if (response.data.success) {
-        setStatistics(response.data.data);
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch statistics:', error);
-    }
-  };
+  // const fetchStatistics = async () => {
+  //   try {
+  //     const response = await axiosClient.get('/profile/statistics');
+  //     if (response.data.success) {
+  //       setStatistics(response.data.data);
+  //     }
+  //   } catch (error: any) {
+  //     // Silently handle statistics fetch error
+  //   }
+  // };
 
   const fetchActivities = async () => {
     try {
@@ -191,7 +190,7 @@ const UserProfile: React.FC = () => {
         setActivities(response.data.data);
       }
     } catch (error: any) {
-      console.error('Failed to fetch activities:', error);
+      // Silently handle activities fetch error
     }
   };
 

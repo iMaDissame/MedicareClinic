@@ -35,11 +35,7 @@ const Login: React.FC = () => {
     setError('');
     setIsSubmitting(true);
 
-    console.group('🔐 Login Component - handleSubmit');
-    console.log('📝 Form submitted:', { username, passwordLength: password.length });
-
     try {
-      console.log('🔄 Calling auth.login()...');
       const success = await login(username, password);
 
       if (success) {
@@ -47,36 +43,22 @@ const Login: React.FC = () => {
         const authType = localStorage.getItem('authType');
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-        console.log('✅ Login successful:', {
-          authType,
-          user: currentUser,
-          from: from || 'none'
-        });
-
         // Determine redirect path based on auth type
         let redirectPath;
 
         if (from && from !== '/login') {
           redirectPath = from;
-          console.log('📍 Redirecting to intended destination:', redirectPath);
         } else {
           redirectPath = authType === 'admin' ? '/admin' : '/app/dashboard';
-          console.log('📍 Redirecting to default path:', redirectPath);
         }
 
         navigate(redirectPath, { replace: true });
       } else {
-        console.warn('❌ Login failed - invalid credentials');
         setError('Invalid credentials or access expired');
       }
     } catch (err: any) {
-      console.error('💥 Login error:', {
-        message: err.message,
-        stack: err.stack
-      });
       setError('Login failed. Please try again.');
     } finally {
-      console.groupEnd();
       setIsSubmitting(false);
     }
   };

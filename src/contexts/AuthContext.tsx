@@ -43,25 +43,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const validateStoredAuth = async () => {
-      console.group('🔐 AuthProvider - validateStoredAuth');
-      
       const savedUser = localStorage.getItem('currentUser');
       const authToken = localStorage.getItem('authToken');
       const savedAuthType = localStorage.getItem('authType');
-      
-      console.log('📦 Storage contents:', {
-        savedUser: savedUser ? 'Exists' : 'Missing',
-        authToken: authToken ? `Exists (${authToken.length} chars)` : 'Missing',
-        savedAuthType: savedAuthType || 'Missing'
-      });
 
       if (savedUser && authToken && savedAuthType) {
         try {
           const user = JSON.parse(savedUser);
           const authType = savedAuthType as 'admin' | 'user';
-          
-          console.log('👤 Parsed user:', user);
-          console.log('🔑 Auth type:', authType);
           
           // Set auth state first (optimistic update)
           setAuthState({
@@ -72,11 +61,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           // Then validate with server - but don't clear auth on failure
           const endpoint = authType === 'admin' ? '/admin/me' : '/auth/me';
-          console.log('🌐 Making validation request to:', endpoint);
           
           try {
             const response = await axiosClient.get(endpoint);
-            console.log('✅ Validation successful:', response.data);
             
             // Update with fresh user data from server
             setAuthState({
@@ -85,17 +72,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               authType,
             });
           } catch (requestError: any) {
-            console.warn('⚠️ Auth validation failed, but keeping existing auth:', {
-              message: requestError.message,
-              status: requestError.response?.status,
-              statusText: requestError.response?.statusText,
-              url: requestError.config?.url
-            });
-            
             // Only clear auth if it's a definitive auth failure (not network issues)
             if (requestError.response?.status === 401 && 
                 requestError.response?.data?.message === 'Unauthenticated.') {
-              console.log('🔒 Definitive auth failure - clearing storage');
               clearAuthStorage();
               setAuthState({
                 user: null,
@@ -106,7 +85,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             // For other errors (network, server issues), keep existing auth
           }
         } catch (parseError) {
-          console.error('❌ Error parsing stored data:', parseError);
           clearAuthStorage();
           setAuthState({
             user: null,
@@ -115,7 +93,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           });
         }
       } else {
-        console.log('📭 No valid authentication data found in storage');
         clearAuthStorage();
         setAuthState({
           user: null,
@@ -124,7 +101,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
       }
       
-      console.groupEnd();
       setIsLoading(false);
     };
 
@@ -132,19 +108,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (usernameOrEmail: string, password: string): Promise<boolean> => {
-    console.group('🔐 AuthProvider - login');
-    console.log('📝 Login attempt with:', { usernameOrEmail, passwordLength: password.length });
-    
     try {
       // Try admin login first
-      console.log('👨‍💼 Attempting admin login...');
       try {
         const adminResponse = await axiosClient.post('/admin/login', {
           login: usernameOrEmail,
           password,
         });
-        
-        console.log('✅ Admin login response:', adminResponse.data);
         
         if (adminResponse?.data?.access_token && adminResponse?.data?.user) {
           localStorage.setItem('authToken', adminResponse.data.access_token);
@@ -157,30 +127,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             authType: 'admin',
           });
 
-          console.log('🎉 Admin login successful');
-          console.groupEnd();
           return true;
-        } else {
-          console.warn('⚠️ Admin login response missing token or user data');
         }
       } catch (adminError: any) {
-        console.log('❌ Admin login failed:', {
-          status: adminError.response?.status,
-          statusText: adminError.response?.statusText,
-          message: adminError.message,
-          url: adminError.config?.url
-        });
+        // Silent handling for admin login failure
       }
       
       // If admin login fails, try user login
-      console.log('👤 Attempting user login...');
       try {
         const userResponse = await axiosClient.post('/auth/login', {
           login: usernameOrEmail,
           password,
         });
-        
-        console.log('✅ User login response:', userResponse.data);
         
         if (userResponse?.data?.access_token && userResponse?.data?.user) {
           localStorage.setItem('authToken', userResponse.data.access_token);
@@ -193,37 +151,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             authType: 'user',
           });
 
-          console.log('🎉 User login successful');
-          console.groupEnd();
           return true;
-        } else {
-          console.warn('⚠️ User login response missing token or user data');
         }
       } catch (userError: any) {
-        console.error('❌ User login failed:', {
-          status: userError.response?.status,
-          statusText: userError.response?.statusText,
-          message: userError.message,
-          url: userError.config?.url,
-          data: userError.response?.data
-        });
+        // Silent handling for user login failure
       }
       
-      console.log('❌ Both login attempts failed');
-      console.groupEnd();
       return false;
     } catch (error: any) {
-      console.error('💥 Unexpected login error:', {
-        message: error.message,
-        stack: error.stack
-      });
-      console.groupEnd();
       return false;
     }
   };
 
   const logout = () => {
-    console.log('👋 Logging out');
     clearAuthStorage();
     setAuthState({
       user: null,

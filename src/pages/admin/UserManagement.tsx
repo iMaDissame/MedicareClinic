@@ -42,7 +42,7 @@ interface FormData {
   password: string;
   access_start: string;
   access_end: string;
-  is_active: boolean;
+  is_active: true;
   category_ids: number[];
 }
 
@@ -54,6 +54,52 @@ interface CategoryAssignmentModalProps {
   onSave: (userId: string, categoryIds: number[]) => void;
   loading: boolean;
 }
+
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type?: 'success' | 'error' | 'info';
+}
+
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, message, type = 'info' }) => {
+  if (!isOpen) return null;
+
+  const getIconColor = () => {
+    switch (type) {
+      case 'success': return 'text-green-500';
+      case 'error': return 'text-red-500';
+      default: return 'text-blue-500';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h3 className={`text-lg font-semibold ${getIconColor()}`}>{title}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="p-6">
+          <p className="text-gray-700">{message}</p>
+        </div>
+        <div className="flex justify-end p-4 border-t">
+          <Button onClick={onClose}>
+            D'accord
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const CategoryAssignmentModal: React.FC<CategoryAssignmentModalProps> = ({
   isOpen,
@@ -332,6 +378,19 @@ const UserManagement: React.FC = () => {
     category_ids: []
   });
 
+  // Modal state
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
   // Dropdown states for categories in form
   const [categorySearch, setCategorySearch] = useState('');
 
@@ -341,6 +400,24 @@ const UserManagement: React.FC = () => {
     loadCategories();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, statusFilter]);
+
+  const showModal = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setModal({
+      isOpen: true,
+      title,
+      message,
+      type
+    });
+  };
+
+  const closeModal = () => {
+    setModal({
+      isOpen: false,
+      title: '',
+      message: '',
+      type: 'info'
+    });
+  };
 
   const loadUsers = async () => {
     try {
@@ -355,32 +432,29 @@ const UserManagement: React.FC = () => {
       setUsers(response.data.data || response.data);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to load users');
-      console.error('Error loading users:', err);
+      setError(error.response?.data?.error || 'Échec du chargement des utilisateurs');
     } finally {
       setLoading(false);
     }
   };
 
-const loadCategories = async () => {
-  try {
-    const response = await axiosClient.get('/admin/categories/select-options');
-    if (response.data.success) {
-      setCategories(response.data.data);
+  const loadCategories = async () => {
+    try {
+      const response = await axiosClient.get('/admin/categories/select-options');
+      if (response.data.success) {
+        setCategories(response.data.data);
+      }
+    } catch (err: unknown) {
+      setError('Échec du chargement des catégories. Veuillez vérifier si l\'API admin est en cours d\'exécution.');
     }
-  } catch (err: unknown) {
-    console.error('Error loading categories:', err);
-    // Optional: set a more specific error message
-    setError('Failed to load categories. Please check if the admin API is running.');
-  }
-};
+  };
 
   const loadStatistics = async () => {
     try {
       const response = await axiosClient.get('/admin/users/statistics');
       setStatistics(response.data);
     } catch (err: unknown) {
-      console.error('Error loading statistics:', err);
+      // Silently fail for statistics as it's not critical
     }
   };
 
@@ -392,7 +466,6 @@ const loadCategories = async () => {
       setError(null);
 
       const submitData = { ...formData };
-      console.log('Submitting user data:', submitData);
 
       if (editingUser) {
         // Update existing user
@@ -411,11 +484,10 @@ const loadCategories = async () => {
       await loadUsers();
       await loadStatistics();
       resetForm();
+      showModal('Succès', editingUser ? 'Utilisateur mis à jour avec succès!' : 'Utilisateur créé avec succès!', 'success');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string; details?: Record<string, string[]> } } };
-      console.error('Full error response:', error.response?.data);
-      setError(error.response?.data?.error || 'Failed to save user');
-      console.error('Error saving user:', err);
+      setError(error.response?.data?.error || 'Échec de la sauvegarde de l\'utilisateur');
     } finally {
       setLoading(false);
     }
@@ -454,7 +526,7 @@ const loadCategories = async () => {
   };
 
   const handleDelete = async (userId: string) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action ne peut pas être annulée.')) {
       return;
     }
 
@@ -463,10 +535,10 @@ const loadCategories = async () => {
       await axiosClient.delete(`/admin/users/${userId}`);
       await loadUsers();
       await loadStatistics();
+      showModal('Succès', 'Utilisateur supprimé avec succès!', 'success');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to delete user');
-      console.error('Error deleting user:', err);
+      setError(error.response?.data?.error || 'Échec de la suppression de l\'utilisateur');
     } finally {
       setLoading(false);
     }
@@ -480,8 +552,7 @@ const loadCategories = async () => {
       await loadStatistics();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to update user status');
-      console.error('Error toggling user status:', err);
+      setError(error.response?.data?.error || 'Échec de la mise à jour du statut de l\'utilisateur');
     } finally {
       setLoading(false);
     }
@@ -495,10 +566,10 @@ const loadCategories = async () => {
       });
       await loadUsers();
       await loadStatistics();
+      showModal('Succès', `Accès prolongé de ${days} jours avec succès!`, 'success');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to extend access');
-      console.error('Error extending access:', err);
+      setError(error.response?.data?.error || 'Échec de la prolongation de l\'accès');
     } finally {
       setLoading(false);
     }
@@ -526,10 +597,10 @@ const loadCategories = async () => {
       await loadUsers();
       setShowCategoryModal(false);
       setSelectedUserForCategories(null);
+      showModal('Succès', 'Catégories assignées avec succès!', 'success');
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Failed to assign categories');
-      console.error('Error assigning categories:', err);
+      setError(error.response?.data?.error || 'Échec de l\'assignation des catégories');
     } finally {
       setCategoryLoading(false);
     }
@@ -546,11 +617,11 @@ const loadCategories = async () => {
 
   const getAccessStatusDisplay = (user: User) => {
     const statusMap = {
-      active: { status: 'Active', color: 'text-green-600', bg: 'bg-green-100' },
-      inactive: { status: 'Inactive', color: 'text-gray-500', bg: 'bg-gray-100' },
-      expired: { status: 'Expired', color: 'text-red-600', bg: 'bg-red-100' },
+      active: { status: 'Actif', color: 'text-green-600', bg: 'bg-green-100' },
+      inactive: { status: 'Inactif', color: 'text-gray-500', bg: 'bg-gray-100' },
+      expired: { status: 'Expiré', color: 'text-red-600', bg: 'bg-red-100' },
       expiring_soon: { 
-        status: user.days_remaining !== null ? `${user.days_remaining}d left` : 'Expiring Soon', 
+        status: user.days_remaining !== null ? `${user.days_remaining}j restant` : 'Expire bientôt', 
         color: 'text-yellow-600', 
         bg: 'bg-yellow-100' 
       }
@@ -565,6 +636,15 @@ const loadCategories = async () => {
 
   return (
     <div className="space-y-6 lg:space-y-8">
+      {/* Modal Component */}
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+      />
+
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestion des utilisateurs</h1>
@@ -941,7 +1021,7 @@ const loadCategories = async () => {
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="is_active" className="text-sm font-medium text-gray-700">
-                Account is active
+                Compte actif
               </label>
             </div>
 
@@ -1015,7 +1095,7 @@ const loadCategories = async () => {
                               </span>
                             ))}
                             {user.categories.length > 2 && (
-                              <span className="text-xs text-gray-500">+{user.categories.length - 2} more</span>
+                              <span className="text-xs text-gray-500">+{user.categories.length - 2} de plus</span>
                             )}
                           </div>
                         )}
@@ -1027,9 +1107,9 @@ const loadCategories = async () => {
                   </div>
                   
                   <div className="text-xs text-gray-600 mb-3">
-                    <div>Début : {new Date(user.access_start).toLocaleDateString()}</div>
-                    <div>Fin : {new Date(user.access_end).toLocaleDateString()}</div>
-                    <div>Créé : {new Date(user.created_at).toLocaleDateString()}</div>
+                    <div>Début : {new Date(user.access_start).toLocaleDateString('fr-FR')}</div>
+                    <div>Fin : {new Date(user.access_end).toLocaleDateString('fr-FR')}</div>
+                    <div>Créé : {new Date(user.created_at).toLocaleDateString('fr-FR')}</div>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -1131,7 +1211,7 @@ const loadCategories = async () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.email || 'No email'}
+                        {user.email || 'Aucun email'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-wrap gap-1">
@@ -1147,7 +1227,7 @@ const loadCategories = async () => {
                               ))}
                               {user.categories.length > 2 && (
                                 <span className="text-xs text-gray-500">
-                                  +{user.categories.length - 2} more
+                                  +{user.categories.length - 2} de plus
                                 </span>
                               )}
                             </>
@@ -1158,8 +1238,8 @@ const loadCategories = async () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
-                          <div>Début : {new Date(user.access_start).toLocaleDateString()}</div>
-                          <div>Fin : {new Date(user.access_end).toLocaleDateString()}</div>
+                          <div>Début : {new Date(user.access_start).toLocaleDateString('fr-FR')}</div>
+                          <div>Fin : {new Date(user.access_end).toLocaleDateString('fr-FR')}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Video, BarChart3, TrendingUp, User, Shield } from 'lucide-react';
 import Card from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
-import axiosClient from '../services/axiosClient'; // Your axios setup
+import axiosClient from '../services/axiosClient'; 
 
 interface User {
   id: number;
@@ -41,15 +41,12 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Use the correct admin routes based on your Laravel setup
         const statsRes = await axiosClient.get('/admin/dashboard/stats');
         setStats(statsRes.data);
         
-        // Also get full lists for additional functionality
         const usersRes = await axiosClient.get('/admin/users');
         const videosRes = await axiosClient.get('/admin/videos');
         
-        // Set the data
         const usersData = Array.isArray(usersRes.data) ? usersRes.data : [];
         const videosData = Array.isArray(videosRes.data) ? videosRes.data : [];
         
@@ -58,8 +55,6 @@ const AdminDashboard: React.FC = () => {
 
         setLoading(false);
       } catch (err) {
-        console.error('Dashboard fetch error:', err);
-        console.error('Error details:', err.response?.data);
         setError(`Failed to load dashboard data: ${err.response?.data?.message || err.message}`);
         setLoading(false);
       }
@@ -70,7 +65,6 @@ const AdminDashboard: React.FC = () => {
 
   const getDisplayStats = () => {
     if (stats) {
-      // Use the stats from the API
       return {
         totalUsers: stats.total_students,
         activeUsers: stats.active_students,
@@ -78,7 +72,6 @@ const AdminDashboard: React.FC = () => {
         totalVideos: stats.total_videos
       };
     } else {
-      // Fallback to calculating from arrays if stats API failed
       const safeUsers = Array.isArray(users) ? users : [];
       const safeVideos = Array.isArray(videos) ? videos : [];
 
@@ -268,28 +261,28 @@ const AdminDashboard: React.FC = () => {
               <div className="p-4 md:p-6">
                 <div className="grid grid-cols-2 gap-2 md:gap-4">
                   <a
-                    href="/MedicareClinic/admin/videos/new"
+                    href="/admin/videos/new"
                     className="p-3 md:p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 text-center group"
                   >
                     <Video className="h-5 w-5 md:h-6 md:w-6 mx-auto mb-1 md:mb-2 text-blue-600 group-hover:scale-110 transition-transform" />
                     <span className="text-xs md:text-sm font-medium text-gray-900">Ajouter une vidéo</span>
                   </a>
                   <a
-                    href="/MedicareClinic/admin/users"
+                    href="/admin/users"
                     className="p-3 md:p-4 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-all duration-200 text-center group"
                   >
                     <Users className="h-5 w-5 md:h-6 md:w-6 mx-auto mb-1 md:mb-2 text-green-600 group-hover:scale-110 transition-transform" />
                     <span className="text-xs md:text-sm font-medium text-gray-900">Gérer les utilisateurs</span>
                   </a>
                   <a
-                    href="/MedicareClinic/admin/progress"
+                    href="/admin/progress"
                     className="p-3 md:p-4 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 text-center group"
                   >
                     <BarChart3 className="h-5 w-5 md:h-6 md:w-6 mx-auto mb-1 md:mb-2 text-purple-600 group-hover:scale-110 transition-transform" />
                     <span className="text-xs md:text-sm font-medium text-gray-900">Voir la progression</span>
                   </a>
                   <a
-                    href="/MedicareClinic/admin/videos"
+                    href="/admin/videos"
                     className="p-3 md:p-4 border border-gray-200 rounded-lg hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 text-center group"
                   >
                     <Video className="h-5 w-5 md:h-6 md:w-6 mx-auto mb-1 md:mb-2 text-yellow-600 group-hover:scale-110 transition-transform" />

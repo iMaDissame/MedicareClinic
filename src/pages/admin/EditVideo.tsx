@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, ChevronDown, Search, X, Video, Image, CheckCircle, Clock, HardDrive } from 'lucide-react';
+import { ArrowLeft, Save, ChevronDown, Search, X, Video, CheckCircle, Clock, HardDrive, AlertCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
@@ -49,6 +49,14 @@ interface ErrorModalProps {
   } | null;
 }
 
+interface AlertModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type: 'error' | 'warning' | 'info';
+}
+
 const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, videoTitle }) => {
   if (!isOpen) return null;
 
@@ -91,7 +99,6 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
     };
 
     navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2));
-    alert('Error details copied to clipboard!');
   };
 
   return (
@@ -168,6 +175,36 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
   );
 };
 
+const AlertModal: React.FC<AlertModalProps> = ({ isOpen, onClose, title, message, type }) => {
+  if (!isOpen) return null;
+
+  const getIcon = () => {
+    switch (type) {
+      case 'error':
+        return <X className="h-12 w-12 text-red-500 mx-auto mb-4" />;
+      case 'warning':
+        return <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />;
+      default:
+        return <AlertCircle className="h-12 w-12 text-blue-500 mx-auto mb-4" />;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="text-center">
+          {getIcon()}
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+          <p className="text-gray-600 mb-6">{message}</p>
+          <Button onClick={onClose} className="w-full">
+            OK
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EditVideo: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -180,6 +217,16 @@ const EditVideo: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'error' | 'warning' | 'info';
+  }>({
+    title: '',
+    message: '',
+    type: 'info'
+  });
   const [errorDetails, setErrorDetails] = useState<{
     message: string;
     status?: number;
@@ -199,6 +246,11 @@ const EditVideo: React.FC = () => {
     category_id: '',
     is_published: false
   });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'warning' | 'info' = 'info') => {
+    setAlertConfig({ title, message, type });
+    setShowAlertModal(true);
+  };
 
   useEffect(() => {
     if (id) {
@@ -248,13 +300,12 @@ const EditVideo: React.FC = () => {
           });
         }
       } else {
-        alert('Failed to fetch video details');
+        showAlert('Erreur', 'Impossible de charger les détails de la vidéo', 'error');
         navigate('/admin/videos');
       }
     } catch (error: any) {
-      console.error('Failed to fetch video:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to fetch video details';
-      alert(errorMessage);
+      const errorMessage = error.response?.data?.message || 'Impossible de charger les détails de la vidéo';
+      showAlert('Erreur', errorMessage, 'error');
       navigate('/admin/videos');
     }
   };
@@ -266,12 +317,11 @@ const EditVideo: React.FC = () => {
         setCategories(response.data.data);
         setFilteredCategories(response.data.data);
       } else {
-        alert('Failed to fetch categories');
+        showAlert('Erreur', 'Impossible de charger les catégories', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to fetch categories:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to fetch categories';
-      alert(errorMessage);
+      const errorMessage = error.response?.data?.message || 'Impossible de charger les catégories';
+      showAlert('Erreur', errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -281,7 +331,7 @@ const EditVideo: React.FC = () => {
     e.preventDefault();
 
     if (!selectedCategory) {
-      alert('Please select a category');
+      showAlert('Attention', 'Veuillez sélectionner une catégorie', 'warning');
       return;
     }
 
@@ -295,11 +345,6 @@ const EditVideo: React.FC = () => {
         is_published: formData.is_published
       };
 
-      console.log('Updating video:', {
-        video_id: id,
-        update_data: updateData
-      });
-
       const response = await axiosClient.put(`/admin/videos/${id}`, updateData, {
         headers: {
           'Content-Type': 'application/json',
@@ -307,11 +352,10 @@ const EditVideo: React.FC = () => {
       });
 
       if (response.data.success) {
-        console.log('Video updated successfully:', response.data.data);
         setShowSuccessModal(true);
       } else {
         setErrorDetails({
-          message: response.data.message || 'Failed to update video',
+          message: response.data.message || 'Échec de la mise à jour de la vidéo',
           status: response.status,
           details: response.data,
           requestData: updateData
@@ -319,10 +363,8 @@ const EditVideo: React.FC = () => {
         setShowErrorModal(true);
       }
     } catch (error: any) {
-      console.error('Failed to update video:', error);
-
       const errorInfo = {
-        message: error.response?.data?.message || error.message || 'Unknown error occurred during video update',
+        message: error.response?.data?.message || error.message || 'Une erreur inconnue s\'est produite lors de la mise à jour de la vidéo',
         status: error.response?.status,
         details: error.response?.data,
         validationErrors: error.response?.data?.errors,
@@ -362,15 +404,15 @@ const EditVideo: React.FC = () => {
   };
 
   const formatFileSize = (bytes: number | null): string => {
-    if (!bytes) return 'Unknown size';
+    if (!bytes) return 'Taille inconnue';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ['Octets', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const formatDuration = (seconds: number | null): string => {
-    if (!seconds) return 'Unknown duration';
+    if (!seconds) return 'Durée inconnue';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -614,6 +656,14 @@ const EditVideo: React.FC = () => {
         isOpen={showErrorModal}
         onClose={() => setShowErrorModal(false)}
         error={errorDetails}
+      />
+
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
       />
     </div>
   );

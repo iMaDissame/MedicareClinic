@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Video, Edit, Trash2, Eye, EyeOff, Plus, Calendar, AlertCircle, Play, X } from 'lucide-react';
+import { Video, Edit, Trash2, Eye, EyeOff, Plus, Calendar, AlertCircle, Play, X, CheckCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import axiosClient from '../../services/axiosClient';
@@ -34,13 +34,21 @@ interface ConfirmModalProps {
   isDestructive?: boolean;
 }
 
+interface AlertModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
 const ConfirmModal: React.FC<ConfirmModalProps> = ({ 
   isOpen, 
   onClose, 
   onConfirm, 
   title, 
   message, 
-  confirmText = 'Confirm',
+  confirmText = 'Confirmer',
   isDestructive = false 
 }) => {
   if (!isOpen) return null;
@@ -74,11 +82,51 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   );
 };
 
+const AlertModal: React.FC<AlertModalProps> = ({ isOpen, onClose, title, message, type }) => {
+  if (!isOpen) return null;
+
+  const getIcon = () => {
+    switch (type) {
+      case 'success':
+        return <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />;
+      case 'error':
+        return <X className="h-12 w-12 text-red-500 mx-auto mb-4" />;
+      default:
+        return <AlertCircle className="h-12 w-12 text-blue-500 mx-auto mb-4" />;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="text-center">
+          {getIcon()}
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+          <p className="text-gray-600 mb-6">{message}</p>
+          <Button onClick={onClose} className="w-full">
+            OK
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const VideoManagement: React.FC = () => {
   const navigate = useNavigate();
   const [videos, setVideos] = useState<VideoData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    title: '',
+    message: '',
+    type: 'info'
+  });
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     action: 'delete' | 'publish' | 'unpublish' | null;
@@ -91,12 +139,16 @@ const VideoManagement: React.FC = () => {
     videoTitle: ''
   });
 
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setAlertConfig({ title, message, type });
+    setShowAlertModal(true);
+  };
+
   useEffect(() => {
     try {
       fetchVideos();
     } catch (error) {
-      console.error('Error in useEffect:', error);
-      setError('Failed to initialize component');
+      setError('Échec de l\'initialisation du composant');
       setLoading(false);
     }
   }, []);
@@ -105,19 +157,16 @@ const VideoManagement: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching videos...');
       
       const response = await axiosClient.get('/admin/videos');
-      console.log('Videos response:', response.data);
       
       if (response.data && response.data.success) {
         setVideos(response.data.data || []);
       } else {
-        setError(response.data?.message || 'Failed to fetch videos');
+        setError(response.data?.message || 'Impossible de charger les vidéos');
       }
     } catch (error: any) {
-      console.error('Failed to fetch videos:', error);
-      setError(error.response?.data?.message || error.message || 'Failed to fetch videos');
+      setError(error.response?.data?.message || error.message || 'Impossible de charger les vidéos');
     } finally {
       setLoading(false);
     }
@@ -133,13 +182,12 @@ const VideoManagement: React.FC = () => {
             ? { ...video, is_published: !video.is_published }
             : video
         ));
-        alert(response.data.message);
+        showAlert('Succès', response.data.message, 'success');
       } else {
-        alert(response.data.message || 'Failed to update publish status');
+        showAlert('Erreur', response.data.message || 'Échec de la mise à jour du statut de publication', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to toggle publish status:', error);
-      alert(error.response?.data?.message || 'Failed to update publish status');
+      showAlert('Erreur', error.response?.data?.message || 'Échec de la mise à jour du statut de publication', 'error');
     }
     
     setConfirmModal({ isOpen: false, action: null, videoId: null, videoTitle: '' });
@@ -151,13 +199,12 @@ const VideoManagement: React.FC = () => {
       
       if (response.data.success) {
         setVideos(prev => prev.filter(video => video.id !== videoId));
-        alert(response.data.message);
+        showAlert('Succès', response.data.message, 'success');
       } else {
-        alert(response.data.message || 'Failed to delete video');
+        showAlert('Erreur', response.data.message || 'Échec de la suppression de la vidéo', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to delete video:', error);
-      alert(error.response?.data?.message || 'Failed to delete video');
+      showAlert('Erreur', error.response?.data?.message || 'Échec de la suppression de la vidéo', 'error');
     }
     
     setConfirmModal({ isOpen: false, action: null, videoId: null, videoTitle: '' });
@@ -190,30 +237,30 @@ const VideoManagement: React.FC = () => {
     switch (confirmModal.action) {
       case 'delete':
         return {
-          title: 'Delete Video',
-          message: `Are you sure you want to delete "${confirmModal.videoTitle}"? This action cannot be undone.`,
-          confirmText: 'Delete',
+          title: 'Supprimer la vidéo',
+          message: `Êtes-vous sûr de vouloir supprimer "${confirmModal.videoTitle}" ? Cette action ne peut pas être annulée.`,
+          confirmText: 'Supprimer',
           isDestructive: true
         };
       case 'publish':
         return {
-          title: 'Publish Video',
-          message: `Are you sure you want to publish "${confirmModal.videoTitle}"? It will be visible to students.`,
-          confirmText: 'Publish',
+          title: 'Publier la vidéo',
+          message: `Êtes-vous sûr de vouloir publier "${confirmModal.videoTitle}" ? Elle sera visible par les étudiants.`,
+          confirmText: 'Publier',
           isDestructive: false
         };
       case 'unpublish':
         return {
-          title: 'Unpublish Video',
-          message: `Are you sure you want to unpublish "${confirmModal.videoTitle}"? It will no longer be visible to students.`,
-          confirmText: 'Unpublish',
+          title: 'Dépublier la vidéo',
+          message: `Êtes-vous sûr de vouloir dépublier "${confirmModal.videoTitle}" ? Elle ne sera plus visible par les étudiants.`,
+          confirmText: 'Dépublier',
           isDestructive: false
         };
       default:
         return {
           title: '',
           message: '',
-          confirmText: 'Confirm',
+          confirmText: 'Confirmer',
           isDestructive: false
         };
     }
@@ -411,6 +458,14 @@ const VideoManagement: React.FC = () => {
         onConfirm={handleConfirmAction}
         {...getConfirmModalProps()}
       />
+
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+      />
     </div>
   );
 };
@@ -424,7 +479,7 @@ interface VideoCardProps {
 
 const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete, onImageClick }) => {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -443,7 +498,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
     }
     
     // Return placeholder image if no cover image
-    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"%3E%3Crect width="400" height="200" fill="%23f3f4f6"/%3E%3Ctext x="200" y="100" text-anchor="middle" dy="0.3em" font-family="Arial, sans-serif" font-size="16" fill="%236b7280"%3ENo Image%3C/text%3E%3C/svg%3E';
+    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"%3E%3Crect width="400" height="200" fill="%23f3f4f6"/%3E%3Ctext x="200" y="100" text-anchor="middle" dy="0.3em" font-family="Arial, sans-serif" font-size="16" fill="%236b7280"%3EAucune image%3C/text%3E%3C/svg%3E';
   };
 
   return (
@@ -456,7 +511,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
           onClick={() => onImageClick(video.id)}
           onError={(e) => {
             // Fallback to a placeholder image if the cover image fails to load
-            (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"%3E%3Crect width="400" height="200" fill="%23f3f4f6"/%3E%3Ctext x="200" y="100" text-anchor="middle" dy="0.3em" font-family="Arial, sans-serif" font-size="16" fill="%236b7280"%3ENo Image%3C/text%3E%3C/svg%3E';
+            (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"%3E%3Crect width="400" height="200" fill="%23f3f4f6"/%3E%3Ctext x="200" y="100" text-anchor="middle" dy="0.3em" font-family="Arial, sans-serif" font-size="16" fill="%236b7280"%3EAucune image%3C/text%3E%3C/svg%3E';
           }}
         />
         
@@ -467,7 +522,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
         >
           <button
             className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white bg-opacity-90 hover:bg-opacity-100 rounded-full p-3 transform hover:scale-110 transition-transform"
-            title="Watch video"
+            title="Regarder la vidéo"
           >
             <Play className="h-6 w-6 text-gray-700 ml-1" />
           </button>
@@ -535,7 +590,7 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onTogglePublish, onDelete,
             </Button>
           </Link>
           
-          {/* Delete button - spans full width on second row */}
+        
           <Button
             size="sm"
             variant="danger"

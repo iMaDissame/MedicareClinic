@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Video, ChevronDown, Search, Upload, X, CheckCircle, Image, Clock, HardDrive } from 'lucide-react';
+import { ArrowLeft, Video, ChevronDown, Search, Upload, X, CheckCircle, Image, Clock, HardDrive, AlertTriangle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Card from '../../components/ui/Card';
@@ -28,6 +28,61 @@ interface ErrorModalProps {
     requestData?: any;
   } | null;
 }
+
+interface AlertModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type: 'error' | 'warning' | 'info';
+}
+
+const AlertModal: React.FC<AlertModalProps> = ({ isOpen, onClose, title, message, type }) => {
+  if (!isOpen) return null;
+
+  const getIcon = () => {
+    switch (type) {
+      case 'error':
+        return <X className="h-12 w-12 text-red-500" />;
+      case 'warning':
+        return <AlertTriangle className="h-12 w-12 text-yellow-500" />;
+      default:
+        return <CheckCircle className="h-12 w-12 text-blue-500" />;
+    }
+  };
+
+  const getColors = () => {
+    switch (type) {
+      case 'error':
+        return 'text-red-800';
+      case 'warning':
+        return 'text-yellow-800';
+      default:
+        return 'text-blue-800';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="text-center">
+          <div className="mb-4 flex justify-center">
+            {getIcon()}
+          </div>
+          <h3 className={`text-lg font-semibold ${getColors()} mb-2`}>
+            {title}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {message}
+          </p>
+          <Button onClick={onClose} className="w-full">
+            Fermer
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, videoTitle }) => {
   if (!isOpen) return null;
@@ -60,7 +115,9 @@ const SuccessModal: React.FC<SuccessModalProps> = ({ isOpen, onClose, videoTitle
 const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
   if (!isOpen || !error) return null;
 
-  const copyErrorDetails = () => {
+  const [showCopySuccess, setShowCopySuccess] = useState(false);
+
+  const copyErrorDetails = async () => {
     const errorDetails = {
       timestamp: new Date().toISOString(),
       message: error.message,
@@ -70,8 +127,21 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
       requestData: error.requestData
     };
 
-    navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2));
-    alert('Error details copied to clipboard!');
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2));
+      setShowCopySuccess(true);
+      setTimeout(() => setShowCopySuccess(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = JSON.stringify(errorDetails, null, 2);
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setShowCopySuccess(true);
+      setTimeout(() => setShowCopySuccess(false), 2000);
+    }
   };
 
   return (
@@ -149,8 +219,13 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ isOpen, onClose, error }) => {
           </div>
 
           <div className="flex space-x-3 mt-6">
-            <Button onClick={copyErrorDetails} variant="secondary" className="flex-1">
-              Copier les détails de l'erreur
+            <Button 
+              onClick={copyErrorDetails} 
+              variant="secondary" 
+              className="flex-1 relative"
+              disabled={showCopySuccess}
+            >
+              {showCopySuccess ? 'Copié !' : 'Copier les détails de l\'erreur'}
             </Button>
             <Button onClick={onClose} className="flex-1">
               Fermer
@@ -176,6 +251,12 @@ const AddVideo: React.FC = () => {
   const [uploadPhase, setUploadPhase] = useState<'preparing' | 'uploading' | 'processing' | 'finalizing'>('preparing');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info' as 'error' | 'warning' | 'info'
+  });
   const [errorDetails, setErrorDetails] = useState<{
     message: string;
     status?: number;
@@ -197,6 +278,11 @@ const AddVideo: React.FC = () => {
     category_id: '',
     is_published: false
   });
+
+  const showAlert = (title: string, message: string, type: 'error' | 'warning' | 'info' = 'info') => {
+    setAlertConfig({ title, message, type });
+    setShowAlertModal(true);
+  };
 
   useEffect(() => {
     fetchCategories();
@@ -229,12 +315,11 @@ const AddVideo: React.FC = () => {
         setCategories(response.data.data);
         setFilteredCategories(response.data.data);
       } else {
-        alert('Failed to fetch categories');
+        showAlert('Erreur', 'Échec du chargement des catégories', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to fetch categories:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to fetch categories';
-      alert(errorMessage);
+      const errorMessage = error.response?.data?.message || 'Échec du chargement des catégories';
+      showAlert('Erreur', errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -259,17 +344,17 @@ const AddVideo: React.FC = () => {
     e.preventDefault();
 
     if (!selectedCategory) {
-      alert('Please select a category');
+      showAlert('Attention', 'Veuillez sélectionner une catégorie', 'warning');
       return;
     }
 
     if (!formData.video_file) {
-      alert('Please select a video file');
+      showAlert('Attention', 'Veuillez sélectionner un fichier vidéo', 'warning');
       return;
     }
 
     if (!formData.cover_image) {
-      alert('Please select a cover image');
+      showAlert('Attention', 'Veuillez sélectionner une image de couverture', 'warning');
       return;
     }
 
@@ -286,23 +371,6 @@ const AddVideo: React.FC = () => {
       uploadData.append('cover_image', formData.cover_image);
       uploadData.append('category_id', selectedCategory.id.toString());
       uploadData.append('is_published', formData.is_published ? '1' : '0');
-
-      console.log('Submitting video for upload:', {
-        title: formData.title,
-        description: formData.description,
-        category_id: selectedCategory.id,
-        is_published: formData.is_published,
-        video_file_info: {
-          name: formData.video_file.name,
-          size: `${(formData.video_file.size / (1024 * 1024)).toFixed(2)} MB`,
-          type: formData.video_file.type
-        },
-        cover_image_info: {
-          name: formData.cover_image.name,
-          size: `${(formData.cover_image.size / (1024 * 1024)).toFixed(2)} MB`,
-          type: formData.cover_image.type
-        }
-      });
 
       setUploadPhase('uploading');
 
@@ -334,20 +402,12 @@ const AddVideo: React.FC = () => {
         setUploadProgress(100);
         setUploadPhase('finalizing');
         
-        console.log('Video uploaded successfully:', {
-          video_id: response.data.data?.id,
-          url: response.data.data?.url,
-          cover_url: response.data.data?.cover_url,
-          duration: response.data.data?.duration,
-          file_size: response.data.data?.file_size
-        });
-        
         setTimeout(() => {
           setShowSuccessModal(true);
         }, 500);
       } else {
         setErrorDetails({
-          message: response.data.message || 'Failed to upload video',
+          message: response.data.message || 'Échec du téléchargement de la vidéo',
           status: response.status,
           details: response.data,
           requestData: {
@@ -362,12 +422,10 @@ const AddVideo: React.FC = () => {
         setShowErrorModal(true);
       }
     } catch (error: any) {
-      console.error('Failed to upload video:', error);
-
       const errorInfo = {
         message: error.code === 'ECONNABORTED'
-          ? 'Upload timeout - upload took too long. Please try with a smaller file or check your connection.'
-          : error.response?.data?.message || error.message || 'Unknown error occurred during upload',
+          ? 'Délai de téléchargement dépassé - le téléchargement a pris trop de temps. Veuillez essayer avec un fichier plus petit ou vérifier votre connexion.'
+          : error.response?.data?.message || error.message || 'Une erreur inconnue s\'est produite pendant le téléchargement',
         status: error.response?.status,
         details: error.response?.data,
         validationErrors: error.response?.data?.errors,
@@ -401,20 +459,41 @@ const AddVideo: React.FC = () => {
   const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Updated file type validation for supported formats
+      // More permissive file type validation for mobile compatibility
       const allowedTypes = [
         'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm',
-        'video/flv', 'video/mkv', 'video/m4v', 'video/3gp'
+        'video/flv', 'video/mkv', 'video/m4v', 'video/3gp', 'video/3gpp',
+        'video/quicktime', 'video/x-msvideo', 'video/x-ms-wmv'
       ];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Veuillez sélectionner un fichier vidéo valide (MP4, AVI, MOV, WMV, WebM, FLV, MKV, M4V, 3GP)');
+      
+      // Check file extension as fallback for mobile devices
+      const fileExtension = file.name.toLowerCase().split('.').pop();
+      const allowedExtensions = ['mp4', 'avi', 'mov', 'wmv', 'webm', 'flv', 'mkv', 'm4v', '3gp', '3gpp'];
+      
+      const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension || '');
+      
+      // More lenient validation for mobile - sometimes file.type is empty or incorrect on mobile
+      if (file.type && !isValidType && file.type !== '') {
+        showAlert('Format invalide', 'Veuillez sélectionner un fichier vidéo valide (MP4, AVI, MOV, WMV, WebM, FLV, MKV, M4V, 3GP)', 'warning');
+        return;
+      }
+      
+      // If no MIME type detected but extension is valid, proceed (common on mobile)
+      if (!file.type && !allowedExtensions.includes(fileExtension || '')) {
+        showAlert('Format invalide', 'Veuillez sélectionner un fichier vidéo valide (MP4, AVI, MOV, WMV, WebM, FLV, MKV, M4V, 3GP)', 'warning');
         return;
       }
 
-      // Increased file size limit (supports larger files)
-      const maxSize = 4 * 1024 * 1024 * 1024; // 4GB
+      // More reasonable file size limit for mobile uploads
+      const maxSize = 2 * 1024 * 1024 * 1024; // 2GB for better mobile compatibility
       if (file.size > maxSize) {
-        alert('La taille du fichier doit être inférieure à 4GB');
+        showAlert('Fichier trop volumineux', 'La taille du fichier doit être inférieure à 2GB pour une meilleure compatibilité mobile', 'warning');
+        return;
+      }
+
+      // Additional check for very small files (likely corrupted)
+      if (file.size < 1024) { // Less than 1KB
+        showAlert('Fichier invalide', 'Le fichier sélectionné semble être invalide ou corrompu', 'error');
         return;
       }
 
@@ -425,17 +504,37 @@ const AddVideo: React.FC = () => {
   const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type for image formats
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Veuillez sélectionner un fichier image valide (JPEG, JPG, PNG, WebP, GIF)');
+      // More permissive image type validation for mobile compatibility
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
+      
+      // Check file extension as fallback for mobile devices
+      const fileExtension = file.name.toLowerCase().split('.').pop();
+      const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'];
+      
+      const isValidType = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension || '');
+      
+      // More lenient validation for mobile - sometimes file.type is empty or incorrect on mobile
+      if (file.type && !isValidType && file.type !== '') {
+        showAlert('Format invalide', 'Veuillez sélectionner un fichier image valide (JPEG, JPG, PNG, WebP, GIF, HEIC)', 'warning');
+        return;
+      }
+      
+      // If no MIME type detected but extension is valid, proceed (common on mobile)
+      if (!file.type && !allowedExtensions.includes(fileExtension || '')) {
+        showAlert('Format invalide', 'Veuillez sélectionner un fichier image valide (JPEG, JPG, PNG, WebP, GIF, HEIC)', 'warning');
         return;
       }
 
-      // Validate file size
-      const maxSize = 20 * 1024 * 1024; // 20MB for images
+      // Reasonable file size for images (mobile cameras can produce large files)
+      const maxSize = 50 * 1024 * 1024; // 50MB for high-res mobile photos
       if (file.size > maxSize) {
-        alert('La taille de l\'image doit être inférieure à 20MB');
+        showAlert('Fichier trop volumineux', 'La taille de l\'image doit être inférieure à 50MB', 'warning');
+        return;
+      }
+
+      // Additional check for very small files (likely corrupted)
+      if (file.size < 100) { // Less than 100 bytes
+        showAlert('Fichier invalide', 'Le fichier image sélectionné semble être invalide ou corrompu', 'error');
         return;
       }
 
@@ -559,7 +658,7 @@ const AddVideo: React.FC = () => {
                         ))
                       ) : (
                         <div className="px-4 py-2 text-gray-500 text-sm">
-                          No categories found
+                          Aucune catégorie trouvée
                         </div>
                       )}
                     </div>
@@ -602,14 +701,14 @@ const AddVideo: React.FC = () => {
                       name="cover-upload"
                       type="file"
                       className="sr-only"
-                      accept="image/*"
+                      accept="image/*,image/jpeg,image/png,image/heic,image/heif"
                       onChange={handleCoverImageChange}
                       ref={coverFileInputRef}
                     />
                   </label>
                   <p className="pl-1">ou glissez-déposez</p>
                 </div>
-                <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF jusqu'à 20MB</p>
+                <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF, HEIC jusqu'à 50MB</p>
                 {formData.cover_image && (
                   <div className="mt-2 relative bg-green-50 border border-green-200 rounded-lg p-3">
                     <div className="flex items-start space-x-2">
@@ -658,14 +757,14 @@ const AddVideo: React.FC = () => {
                       name="video-upload"
                       type="file"
                       className="sr-only"
-                      accept="video/*"
+                      accept="video/*,video/mp4,video/quicktime,video/x-msvideo,video/3gpp"
                       onChange={handleVideoFileChange}
                       ref={videoFileInputRef}
                     />
                   </label>
                   <p className="pl-1">ou glissez-déposez</p>
                 </div>
-                <p className="text-xs text-gray-500">MP4, AVI, MOV, WMV, WebM et plus jusqu'à 4GB</p>
+                <p className="text-xs text-gray-500">MP4, AVI, MOV, WMV, WebM et plus jusqu'à 2GB</p>
                 {formData.video_file && (
                   <div className="mt-2 relative bg-green-50 border border-green-200 rounded-lg p-3">
                     <div className="flex items-start space-x-2">
@@ -759,10 +858,7 @@ const AddVideo: React.FC = () => {
                     <Video className="h-3 w-3 mr-1" />
                     Traitement
                   </span>
-                  <span className={`flex items-center ${uploadPhase === 'finalizing' ? 'text-blue-600 font-medium' : uploadProgress === 100 ? 'text-green-600' : 'text-gray-400'}`}>
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Finalisation
-                  </span>
+               
                 </div>
                 <p className="text-center text-gray-500">
                   {uploadPhase === 'uploading' && 'Téléchargement des fichiers sur Cloudinary...'}
@@ -801,6 +897,14 @@ const AddVideo: React.FC = () => {
         isOpen={showErrorModal}
         onClose={() => setShowErrorModal(false)}
         error={errorDetails}
+      />
+
+      <AlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
       />
     </div>
   );

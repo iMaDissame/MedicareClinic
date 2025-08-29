@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Search, Users as UsersIcon } from 'lucide-react';
+import { ArrowLeft, Save, Search, Users as UsersIcon, X, CheckCircle, XCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import axiosClient from '../../services/axiosClient';
@@ -19,6 +19,56 @@ interface Category {
   users: User[];
 }
 
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type?: 'success' | 'error' | 'info';
+}
+
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, message, type = 'info' }) => {
+  if (!isOpen) return null;
+
+  const getIcon = () => {
+    switch (type) {
+      case 'success': return <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />;
+      case 'error': return <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h3 className={`text-lg font-semibold ${
+            type === 'success' ? 'text-green-600' : 
+            type === 'error' ? 'text-red-600' : 'text-blue-600'
+          }`}>
+            {title}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6">
+          {getIcon()}
+          <p className="text-gray-700 text-center">{message}</p>
+        </div>
+        <div className="flex justify-end p-4 border-t">
+          <Button onClick={onClose}>
+            D'accord
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AssignUsers: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
@@ -28,10 +78,39 @@ const AssignUsers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   useEffect(() => {
     fetchCategoryAndUsers();
   }, [categoryId]);
+
+  const showModal = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setModal({
+      isOpen: true,
+      title,
+      message,
+      type
+    });
+  };
+
+  const closeModal = () => {
+    setModal({
+      isOpen: false,
+      title: '',
+      message: '',
+      type: 'info'
+    });
+  };
 
   const fetchCategoryAndUsers = async () => {
     try {
@@ -47,22 +126,20 @@ const AssignUsers: React.FC = () => {
         // Set currently assigned users as selected
         setSelectedUserIds(categoryResponse.data.data.users.map((user: User) => user.id));
       } else {
-        alert('Failed to fetch data');
-        navigate('/admin/categories');
+        showModal('Erreur', 'Impossible de charger les données', 'error');
+        setTimeout(() => navigate('/admin/categories'), 2000);
       }
     } catch (error: any) {
-      console.error('Failed to fetch data:', error);
-      
       // More specific error handling
       if (error.response?.status === 404) {
-        alert('Category or users endpoint not found. Please check your API setup.');
+        showModal('Erreur', 'Endpoint non trouvé. Veuillez vérifier votre configuration API.', 'error');
       } else if (error.response?.status === 401) {
-        alert('Authentication failed. Please login again.');
-        navigate('/login');
+        showModal('Erreur', 'Authentification échouée. Veuillez vous reconnecter.', 'error');
+        setTimeout(() => navigate('/login'), 2000);
       } else {
-        alert(`Failed to fetch data: ${error.response?.data?.message || error.message}`);
+        showModal('Erreur', `Impossible de charger les données: ${error.response?.data?.message || error.message}`, 'error');
       }
-      navigate('/admin/categories');
+      setTimeout(() => navigate('/admin/categories'), 2000);
     } finally {
       setLoading(false);
     }
@@ -84,15 +161,14 @@ const AssignUsers: React.FC = () => {
       });
       
       if (response.data.success) {
-        alert('Users assigned successfully!');
-        navigate('/admin/categories');
+        showModal('Succès', 'Utilisateurs assignés avec succès!', 'success');
+        setTimeout(() => navigate('/admin/categories'), 1500);
       } else {
-        alert(response.data.message || 'Failed to assign users');
+        showModal('Erreur', response.data.message || 'Échec de l\'assignation des utilisateurs', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to assign users:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to assign users';
-      alert(errorMessage);
+      const errorMessage = error.response?.data?.message || 'Échec de l\'assignation des utilisateurs';
+      showModal('Erreur', errorMessage, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -128,6 +204,15 @@ const AssignUsers: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {/* Modal Component */}
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+      />
+
       {/* Header */}
       <div className="flex items-center space-x-4">
         <Button

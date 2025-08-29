@@ -65,7 +65,6 @@ const Dashboard: React.FC = () => {
         setError('Failed to load videos');
       }
     } catch (err: any) {
-      console.error('Error loading videos:', err);
       setError(err.response?.data?.message || 'Failed to load videos. Please try again.');
     } finally {
       setLoading(false);
@@ -79,14 +78,11 @@ const Dashboard: React.FC = () => {
       const response = await axiosClient.get(`/user-progress/${user?.id}`);
       if (response.data.success) {
         const apiProgress = response.data.data.progress_details || [];
-        console.log('Progress from API:', apiProgress);
         setProgress(apiProgress);
       } else {
         throw new Error('API response not successful');
       }
     } catch (err: any) {
-      console.warn('Failed to load progress from API, using localStorage fallback:', err);
-      
       // Enhanced localStorage fallback
       try {
         const allProgressData: UserProgress[] = [];
@@ -111,16 +107,14 @@ const Dashboard: React.FC = () => {
                   });
                 }
               } catch (parseError) {
-                console.error('Failed to parse progress data:', parseError);
+                // Silent error handling for production
               }
             }
           }
         }
         
-        console.log('Progress from localStorage:', allProgressData);
         setProgress(allProgressData);
       } catch (localError) {
-        console.error('Failed to load from localStorage:', localError);
         setProgress([]);
       }
     }
@@ -133,7 +127,7 @@ const Dashboard: React.FC = () => {
         setUserStats(response.data.data);
       }
     } catch (err: any) {
-      console.warn('Failed to load user stats:', err);
+      // Silent error handling for production
     }
   };
 
@@ -149,7 +143,6 @@ const Dashboard: React.FC = () => {
     
     if (progressItem) {
       const progressValue = parseFloat(progressItem.progress?.toString() || '0');
-      console.log(`Progress for video ${videoId}:`, progressValue, progressItem);
       return Math.max(0, Math.min(100, progressValue)); // Ensure it's between 0-100
     }
     

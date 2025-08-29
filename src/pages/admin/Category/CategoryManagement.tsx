@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Tag, Edit, Trash2, Users, Video, Plus, Search } from 'lucide-react';
+import { Tag, Edit, Trash2, Users, Video, Plus, Search, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import axiosClient from '../../../services/axiosClient';
@@ -21,6 +21,99 @@ interface Statistics {
   most_popular_category: Category | null;
 }
 
+interface NotificationProps {
+  type: 'success' | 'error' | 'warning';
+  message: string;
+  onClose: () => void;
+}
+
+const Notification: React.FC<NotificationProps> = ({ type, message, onClose }) => {
+  const getIcon = () => {
+    switch (type) {
+      case 'success': return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case 'error': return <XCircle className="h-5 w-5 text-red-600" />;
+      case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+    }
+  };
+
+  const getColors = () => {
+    switch (type) {
+      case 'success': return 'bg-green-50 border-green-200 text-green-800';
+      case 'error': return 'bg-red-50 border-red-200 text-red-800';
+      case 'warning': return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+    }
+  };
+
+  return (
+    <div className="fixed top-4 right-4 z-50 animate-slide-in">
+      <div className={`flex items-center p-4 border rounded-lg shadow-lg ${getColors()}`}>
+        {getIcon()}
+        <span className="ml-3 text-sm font-medium">{message}</span>
+        <button
+          onClick={onClose}
+          className="ml-4 text-gray-400 hover:text-gray-600"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+};
+
+interface ConfirmModalProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  confirmText?: string;
+  cancelText?: string;
+  type?: 'danger' | 'warning';
+}
+
+const ConfirmModal: React.FC<ConfirmModalProps> = ({
+  isOpen,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  confirmText = 'Confirmer',
+  cancelText = 'Annuler',
+  type = 'warning'
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="flex items-center mb-4">
+          <div className={`p-2 rounded-full ${type === 'danger' ? 'bg-red-100' : 'bg-yellow-100'}`}>
+            <AlertTriangle className={`h-6 w-6 ${type === 'danger' ? 'text-red-600' : 'text-yellow-600'}`} />
+          </div>
+          <h2 className="text-xl font-semibold ml-3">{title}</h2>
+        </div>
+        <p className="text-gray-600 mb-6">{message}</p>
+        <div className="flex space-x-3">
+          <Button
+            onClick={onConfirm}
+            variant={type === 'danger' ? 'danger' : 'primary'}
+            className="flex-1"
+          >
+            {confirmText}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={onCancel}
+            className="flex-1"
+          >
+            {cancelText}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const CategoryManagement: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
@@ -29,11 +122,36 @@ const CategoryManagement: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
 
   useEffect(() => {
     fetchCategories();
     fetchStatistics();
   }, []);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (type: 'success' | 'error' | 'warning', message: string) => {
+    setNotification({ type, message });
+  };
 
   const fetchCategories = async () => {
     try {
@@ -42,7 +160,7 @@ const CategoryManagement: React.FC = () => {
         setCategories(response.data.data);
       }
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      // Silent error handling for production
     } finally {
       setLoading(false);
     }
@@ -55,7 +173,7 @@ const CategoryManagement: React.FC = () => {
         setStatistics(response.data.data);
       }
     } catch (error) {
-      console.error('Failed to fetch statistics:', error);
+      // Silent error handling for production
     }
   };
 
@@ -73,37 +191,41 @@ const CategoryManagement: React.FC = () => {
         await fetchStatistics();
         setNewCategoryName('');
         setShowAddModal(false);
+        showNotification('success', 'Catégorie créée avec succès');
       } else {
-        alert(response.data.message || 'Failed to create category');
+        showNotification('error', response.data.message || 'Échec de la création de la catégorie');
       }
     } catch (error: any) {
-      console.error('Failed to create category:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to create category';
-      alert(errorMessage);
+      const errorMessage = error.response?.data?.message || 'Échec de la création de la catégorie';
+      showNotification('error', errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteCategory = async (categoryId: number, categoryName: string) => {
-    if (!window.confirm(`Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      const response = await axiosClient.delete(`/admin/categories/${categoryId}`);
-      
-      if (response.data.success) {
-        await fetchCategories();
-        await fetchStatistics();
-      } else {
-        alert(response.data.message || 'Failed to delete category');
+  const handleDeleteCategory = (categoryId: number, categoryName: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer la catégorie',
+      message: `Êtes-vous sûr de vouloir supprimer la catégorie "${categoryName}" ? Cette action ne peut pas être annulée.`,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          const response = await axiosClient.delete(`/admin/categories/${categoryId}`);
+          
+          if (response.data.success) {
+            await fetchCategories();
+            await fetchStatistics();
+            showNotification('success', 'Catégorie supprimée avec succès');
+          } else {
+            showNotification('error', response.data.message || 'Échec de la suppression de la catégorie');
+          }
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || 'Échec de la suppression de la catégorie';
+          showNotification('error', errorMessage);
+        }
       }
-    } catch (error: any) {
-      console.error('Failed to delete category:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to delete category';
-      alert(errorMessage);
-    }
+    });
   };
 
   const filteredCategories = categories.filter(category =>
@@ -114,7 +236,7 @@ const CategoryManagement: React.FC = () => {
     return (
       <div className="space-y-8">
         <div className="flex justify-center items-center h-64">
-          <div className="text-gray-600">Loading categories...</div>
+          <div className="text-gray-600">Chargement des catégories...</div>
         </div>
       </div>
     );
@@ -122,6 +244,27 @@ const CategoryManagement: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {/* Notifications */}
+      {notification && (
+        <Notification
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        type="danger"
+      />
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -181,7 +324,7 @@ const CategoryManagement: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">La plus populaire</p>
                 <p className="text-lg font-bold text-gray-900">
-                  {statistics.most_popular_category?.name || 'None'}
+                  {statistics.most_popular_category?.name || 'Aucune'}
                 </p>
               </div>
             </div>
@@ -261,6 +404,22 @@ const CategoryManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
@@ -281,7 +440,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onDelete }) => {
           <div className="ml-3">
             <h3 className="font-semibold text-gray-900">{category.name}</h3>
             <p className="text-sm text-gray-500">
-              Créée le {new Date(category.created_at).toLocaleDateString()}
+              Créée le {new Date(category.created_at).toLocaleDateString('fr-FR')}
             </p>
           </div>
         </div>

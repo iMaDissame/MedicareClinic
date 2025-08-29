@@ -1,22 +1,43 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { getChats, getChatMessages, sendChatMessage, startChat } from '../services/axiosClient';
+import { getChats, getChatMessages, sendChatMessage } from '../services/axiosClient';
 import axiosClient from '../services/axiosClient';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import { MessageCircle, Send, User, Users, Clock, AlertCircle, Search, MoreVertical, Phone, Video, ArrowLeft } from 'lucide-react';
 
+interface ChatPartner {
+  id: string;
+  username?: string;
+  name?: string;
+  email?: string;
+}
+
+interface Chat {
+  id: string;
+  user?: ChatPartner;
+  admin?: ChatPartner;
+}
+
+interface Message {
+  id: string;
+  message: string;
+  sender_type: string;
+  sender_id: string;
+  created_at: string;
+}
+
 const ChatSection = () => {
-  const [chats, setChats] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [admins, setAdmins] = useState<any[]>([]);
-  const [selectedPartner, setSelectedPartner] = useState<any | null>(null);
-  const [selectedChat, setSelectedChat] = useState<any | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [users, setUsers] = useState<ChatPartner[]>([]);
+  const [admins, setAdmins] = useState<ChatPartner[]>([]);
+  const [selectedPartner, setSelectedPartner] = useState<ChatPartner | null>(null);
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showMobileChat, setShowMobileChat] = useState(false);
-  
+
   // Scroll management states
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
@@ -28,45 +49,49 @@ const ChatSection = () => {
   const isAdmin = currentUserType === 'admin';
 
   useEffect(() => {
-    getChats().then(res => setChats(res.data.data));
+    getChats().then(res => setChats(res.data.data || []));
     if (currentUserType === 'admin') {
-      axiosClient.get('/admin/users').then(res => setUsers(res.data.data));
+      axiosClient.get('/admin/users').then(res => setUsers(res.data.data || []));
     } else {
-      axiosClient.get('/admins').then(res => setAdmins(res.data.data));
+      axiosClient.get('/admins').then(res => setAdmins(res.data.data || []));
     }
-  }, []);
+  }, [currentUserType]);
 
-  const handlePartnerClick = async (partner: any) => {
+  const handlePartnerClick = async (partner: ChatPartner) => {
     setSelectedPartner(partner);
     setShowMobileChat(true);
     setIsLoading(true);
     setShouldAutoScroll(true);
     setUserHasScrolled(false);
-    
+
     const chat = chats.find(c =>
-      (currentUserType === 'admin' && c.user.id === partner.id) ||
-      (currentUserType !== 'admin' && c.admin.id === partner.id)
+      (currentUserType === 'admin' && c.user?.id === partner.id) ||
+      (currentUserType !== 'admin' && c.admin?.id === partner.id)
     );
-    
+
     if (chat) {
       setSelectedChat(chat);
       fetchMessages(chat.id);
     } else {
-      let res;
-      if (currentUserType === 'admin') {
-        res = await axiosClient.post('/chats/start', { user_id: partner.id });
-      } else {
-        res = await axiosClient.post('/chats/start', { admin_id: partner.id });
+      try {
+        let res;
+        if (currentUserType === 'admin') {
+          res = await axiosClient.post('/chats/start', { user_id: partner.id });
+        } else {
+          res = await axiosClient.post('/chats/start', { admin_id: partner.id });
+        }
+        setSelectedChat(res.data.data);
+        fetchMessages(res.data.data.id);
+      } catch (error) {
+        // Handle error silently
       }
-      setSelectedChat(res.data.data);
-      fetchMessages(res.data.data.id);
     }
     setIsLoading(false);
   };
 
   const fetchMessages = useCallback((chatId: string) => {
     getChatMessages(chatId).then(res => {
-      const newMessages = res.data.data;
+      const newMessages = res.data.data || [];
       setMessages(prevMessages => {
         const hasNewMessages = newMessages.length > prevMessages.length;
         if (hasNewMessages && shouldAutoScroll && !userHasScrolled) {
@@ -86,15 +111,15 @@ const ChatSection = () => {
 
   const handleScroll = useCallback(() => {
     if (!messagesContainerRef.current) return;
-    
+
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-    
+
     if (!isNearBottom && !userHasScrolled) {
       setUserHasScrolled(true);
       setShouldAutoScroll(false);
     }
-    
+
     if (isNearBottom && userHasScrolled) {
       setUserHasScrolled(false);
       setShouldAutoScroll(true);
@@ -111,8 +136,12 @@ const ChatSection = () => {
     setInput('');
     setShouldAutoScroll(true);
     setUserHasScrolled(false);
-    await sendChatMessage(selectedChat.id, messageText);
-    fetchMessages(selectedChat.id);
+    try {
+      await sendChatMessage(selectedChat.id, messageText);
+      fetchMessages(selectedChat.id);
+    } catch (error) {
+      // Handle error silently
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -122,7 +151,7 @@ const ChatSection = () => {
     }
   };
 
-  const partners = currentUserType === 'admin' ? users : admins;
+  const partners = isAdmin ? users : admins;
   const filteredPartners = partners.filter(partner =>
     (partner.username || partner.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (partner.email || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -132,14 +161,14 @@ const ChatSection = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', {
+      return date.toLocaleTimeString('fr-FR', {
         hour: 'numeric',
         minute: '2-digit'
       });
     } else {
-      return date.toLocaleDateString('en-US', {
+      return date.toLocaleDateString('fr-FR', {
         month: 'short',
         day: 'numeric'
       });
@@ -147,11 +176,11 @@ const ChatSection = () => {
   };
 
   // Enhanced message component with pink styling
-  const MessageBubble = ({ msg, isOwn }: { msg: any, isOwn: boolean }) => (
+  const MessageBubble = ({ msg, isOwn }: { msg: Message, isOwn: boolean }) => (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-3`}>
       <div className={`group relative max-w-[280px] md:max-w-xs lg:max-w-md ${isOwn ? 'order-2' : 'order-1'}`}>
         <div
-          className={`px-5 py-3 rounded-2xl shadow-lg transition-all duration-200 hover:scale-105 font-medium ${
+          className={`px-4 py-3 rounded-2xl shadow-lg transition-all duration-200 hover:scale-105 font-medium ${
             isOwn
               ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-pink-200 rounded-br-md'
               : 'bg-white text-gray-800 border border-pink-100 shadow-pink-100 rounded-bl-md'
@@ -159,7 +188,7 @@ const ChatSection = () => {
         >
           <p className="text-sm leading-relaxed break-words">{msg.message}</p>
         </div>
-        
+
         <div className={`flex items-center mt-1 px-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
           <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${
             isOwn ? 'text-pink-100' : 'text-gray-500'
@@ -177,11 +206,10 @@ const ChatSection = () => {
       className="lg:hidden flex items-center space-x-2 text-pink-600 hover:text-rose-700 transition-colors mb-4 font-medium"
     >
       <ArrowLeft className="h-5 w-5" />
-      <span>Back to {isAdmin ? 'Students' : 'Support Agents'}</span>
+      <span>Retour aux {isAdmin ? 'étudiants' : 'agents de support'}</span>
     </button>
   );
 
-  // Common layout for both admin and user
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
@@ -280,12 +308,12 @@ const ChatSection = () => {
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                           <span className="text-sm text-pink-600 font-medium">
-                            Online {isAdmin ? '' : '• Support Agent'}
+                            En ligne {isAdmin ? '' : '• Agent de support'}
                           </span>
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-full transition-colors">
                         <Phone className="h-5 w-5" />
@@ -307,7 +335,7 @@ const ChatSection = () => {
                     <div className="flex justify-center items-center h-full">
                       <div className="flex items-center space-x-3">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
-                        <span className="text-pink-600 font-medium">Loading messages...</span>
+                        <span className="text-pink-600 font-medium">Chargement des messages...</span>
                       </div>
                     </div>
                   ) : (
@@ -380,7 +408,7 @@ const ChatSection = () => {
                   className="w-full pl-10 pr-4 py-2 border-2 border-pink-200 rounded-lg focus:ring-4 focus:ring-pink-200 focus:border-pink-400 bg-gradient-to-r from-pink-50 to-rose-100 placeholder-pink-400 font-medium"
                 />
               </div>
-              
+
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {filteredPartners.length === 0 ? (
                   <div className="text-center py-12">
@@ -413,13 +441,13 @@ const ChatSection = () => {
                           </div>
                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full animate-pulse"></div>
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-pink-700 truncate group-hover:text-pink-800">
                             {partner.username || partner.name}
                           </div>
                           <div className="text-sm text-pink-500 truncate group-hover:text-pink-600">
-                            {isAdmin ? partner.email : 'Support Specialist'}
+                            {isAdmin ? partner.email : 'Spécialiste du support'}
                           </div>
                         </div>
                       </div>
@@ -451,7 +479,7 @@ const ChatSection = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto">
                 {filteredPartners.length === 0 ? (
                   <div className="p-6 text-center">
@@ -486,7 +514,7 @@ const ChatSection = () => {
                         {selectedPartner?.id === partner.id && (
                           <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"></div>
                         )}
-                        
+
                         <div className="flex items-center space-x-3">
                           <div className="relative">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-300 ${
@@ -498,7 +526,7 @@ const ChatSection = () => {
                             </div>
                             <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 border-2 border-white rounded-full animate-pulse"></div>
                           </div>
-                          
+
                           <div className="flex-1 min-w-0">
                             <div className={`font-bold truncate transition-colors duration-300 ${
                               selectedPartner?.id === partner.id ? 'text-white' : 'text-pink-700 group-hover:text-pink-800'
@@ -508,7 +536,7 @@ const ChatSection = () => {
                             <div className={`text-xs truncate transition-colors duration-300 ${
                               selectedPartner?.id === partner.id ? 'text-pink-100' : 'text-pink-500 group-hover:text-pink-600'
                             }`}>
-                              {isAdmin ? partner.email : 'Support Specialist'}
+                              {isAdmin ? partner.email : 'Spécialiste du support'}
                             </div>
                           </div>
                         </div>
@@ -539,18 +567,21 @@ const ChatSection = () => {
                           <div className="flex items-center space-x-2">
                             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                             <span className="text-sm text-pink-600 font-medium">
-                              Online {isAdmin ? '' : '• Support Agent'}
+                              En ligne {isAdmin ? '' : '• Agent de support'}
                             </span>
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2">
                         <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-xl transition-colors duration-200">
                           <Phone className="h-5 w-5" />
                         </button>
                         <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-xl transition-colors duration-200">
                           <Video className="h-5 w-5" />
+                        </button>
+                        <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-xl transition-colors duration-200">
+                          <MoreVertical className="h-5 w-5" />
                         </button>
                         <button className="p-2 text-pink-600 hover:bg-pink-100 rounded-xl transition-colors duration-200">
                           <MoreVertical className="h-5 w-5" />
@@ -569,7 +600,7 @@ const ChatSection = () => {
                       <div className="flex justify-center items-center h-full">
                         <div className="flex items-center space-x-3">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
-                          <span className="text-pink-600 font-medium">Loading conversation...</span>
+                          <span className="text-pink-600 font-medium">Chargement de la conversation...</span>
                         </div>
                       </div>
                     ) : (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Video } from 'lucide-react';
+import { ArrowLeft, Save, Video, X } from 'lucide-react';
 import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import axiosClient from '../../../services/axiosClient';
@@ -14,6 +14,50 @@ interface Category {
   updated_at: string;
 }
 
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type?: 'success' | 'error' | 'info';
+}
+
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, message, type = 'info' }) => {
+  if (!isOpen) return null;
+
+  const getIconColor = () => {
+    switch (type) {
+      case 'success': return 'text-green-500';
+      case 'error': return 'text-red-500';
+      default: return 'text-blue-500';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h3 className={`text-lg font-semibold ${getIconColor()}`}>{title}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-4">
+          <p className="text-gray-700">{message}</p>
+        </div>
+        <div className="flex justify-end p-4 border-t">
+          <Button onClick={onClose}>
+            D'accord
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EditCategory: React.FC = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
@@ -21,10 +65,39 @@ const EditCategory: React.FC = () => {
   const [categoryName, setCategoryName] = useState('');
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   useEffect(() => {
     fetchCategory();
   }, [categoryId]);
+
+  const showModal = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setModal({
+      isOpen: true,
+      title,
+      message,
+      type
+    });
+  };
+
+  const closeModal = () => {
+    setModal({
+      isOpen: false,
+      title: '',
+      message: '',
+      type: 'info'
+    });
+  };
 
   const fetchCategory = async () => {
     try {
@@ -34,20 +107,22 @@ const EditCategory: React.FC = () => {
         setCategory(response.data.data);
         setCategoryName(response.data.data.name);
       } else {
-        alert('Failed to fetch category details');
-        navigate('/admin/categories');
+        showModal('Erreur', 'Impossible de charger les détails de la catégorie', 'error');
+        setTimeout(() => navigate('/admin/categories'), 2000);
       }
     } catch (error) {
-      console.error('Failed to fetch category:', error);
-      alert('Failed to fetch category details');
-      navigate('/admin/categories');
+      showModal('Erreur', 'Impossible de charger les détails de la catégorie', 'error');
+      setTimeout(() => navigate('/admin/categories'), 2000);
     } finally {
       setLoading(false);
     }
   };
 
   const handleUpdateCategory = async () => {
-    if (!categoryName.trim()) return;
+    if (!categoryName.trim()) {
+      showModal('Attention', 'Veuillez saisir un nom de catégorie valide', 'error');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -56,15 +131,14 @@ const EditCategory: React.FC = () => {
       });
       
       if (response.data.success) {
-        alert('Category updated successfully!');
-        navigate('/admin/categories');
+        showModal('Succès', 'Catégorie mise à jour avec succès!', 'success');
+        setTimeout(() => navigate('/admin/categories'), 1500);
       } else {
-        alert(response.data.message || 'Failed to update category');
+        showModal('Erreur', response.data.message || 'Échec de la mise à jour de la catégorie', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to update category:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to update category';
-      alert(errorMessage);
+      const errorMessage = error.response?.data?.message || 'Échec de la mise à jour de la catégorie';
+      showModal('Erreur', errorMessage, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -95,6 +169,15 @@ const EditCategory: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {/* Modal Component */}
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={closeModal}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+      />
+
       {/* Header */}
       <div className="flex items-center space-x-4">
         <Button
@@ -156,13 +239,13 @@ const EditCategory: React.FC = () => {
             <div className="flex justify-between items-center py-2 border-b border-gray-200">
               <span className="text-gray-600">Date de création</span>
               <span className="font-semibold">
-                {new Date(category.created_at).toLocaleDateString()}
+                {new Date(category.created_at).toLocaleDateString('fr-FR')}
               </span>
             </div>
             <div className="flex justify-between items-center py-2">
               <span className="text-gray-600">Dernière modification</span>
               <span className="font-semibold">
-                {new Date(category.updated_at).toLocaleDateString()}
+                {new Date(category.updated_at).toLocaleDateString('fr-FR')}
               </span>
             </div>
           </div>

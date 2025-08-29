@@ -38,6 +38,12 @@ interface Notification {
   created_at: string;
 }
 
+interface Toast {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
 const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
@@ -48,6 +54,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const [showFullPage, setShowFullPage] = useState(false);
   const [filter, setFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [toasts, setToasts] = useState<Toast[]>([]);
   
   // User dropdown state
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -56,6 +63,17 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
 
   // Use axiosClient instead of undefined api
   const api = axiosClient;
+
+  // Toast function
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Date.now();
+    const newToast = { id, message, type };
+    setToasts(prev => [...prev, newToast]);
+    
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 4000);
+  };
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -78,7 +96,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       const response = await api.get('/notifications/unread-count');
       setUnreadCount(response.data.data.unread_count);
     } catch (error) {
-      console.error('Failed to fetch notification count:', error);
+      // Silent error handling
     }
   };
 
@@ -93,7 +111,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       const response = await api.get(url);
       setNotifications(response.data.data);
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      showToast('Échec du chargement des notifications', 'error');
     } finally {
       setLoading(false);
     }
@@ -110,7 +128,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       );
       fetchUnreadCount();
     } catch (error) {
-      console.error('Failed to mark as read:', error);
+      showToast('Échec du marquage comme lu', 'error');
     }
   };
 
@@ -120,8 +138,9 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       await api.patch('/notifications/mark-all-read');
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       fetchUnreadCount();
+      showToast('Toutes les notifications ont été marquées comme lues', 'success');
     } catch (error) {
-      console.error('Failed to mark all as read:', error);
+      showToast('Échec du marquage de toutes les notifications', 'error');
     }
   };
 
@@ -131,8 +150,9 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       await api.delete(`/notifications/${notificationId}`);
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       fetchUnreadCount();
+      showToast('Notification supprimée avec succès', 'success');
     } catch (error) {
-      console.error('Failed to delete notification:', error);
+      showToast('Échec de la suppression de la notification', 'error');
     }
   };
 
@@ -316,7 +336,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                           className="inline-block mt-3 text-sm text-blue-600 hover:text-blue-800"
                           onClick={() => handleMarkAsRead(notification.id)}
                         >
-                          View details →
+                          Voir les détails →
                         </Link>
                       </div>
                     </div>
@@ -346,254 +366,305 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             )}
           </div>
         </div>
+
+        {/* Toast Notifications */}
+        <div className="fixed bottom-4 right-4 space-y-2 z-60">
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              className={`p-4 rounded-lg shadow-lg transition-all duration-300 ${
+                toast.type === 'success'
+                  ? 'bg-green-500 text-white'
+                  : toast.type === 'error'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-blue-500 text-white'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm">{toast.message}</span>
+                <button
+                  onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                  className="ml-4 text-white hover:text-gray-200"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-pink-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-4">
-            {/* Mobile menu button for admin */}
-            {user?.role === 'admin' && onMenuClick && (
-              <button
-                onClick={onMenuClick}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-              >
-                <Menu className="h-5 w-5 text-gray-600" />
-              </button>
-            )}
-
-            <Link
-              to={user?.role === 'admin' ? '/admin/dashboard' : '/app/dashboard'}
-              className="flex items-center space-x-2"
-            >
-              <div className="flex items-center mt-6">
-                <img
-                  src={logo}
-                  alt="Logo Medicare Clinic"
-                  className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2"
-                />
-              </div>
-              {/* <span className="text-xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent hidden sm:block">
-              MediCare
-              </span> */}
-            </Link>
-          </div>
-
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* Notification Bell */}
-            <div className="relative flex items-center" ref={notificationDropdownRef}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleNotifications}
-                className="relative"
-              >
-                <Bell className="h-4 w-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </Button>
-
-              {/* Chat Icon Button */}
-              <Link
-                to={user?.role === 'admin' ? '/admin/chat' : '/app/chat'}
-                className="ml-2"
-                title="Chat"
-              >
-                <Button variant="ghost" size="sm" className="relative">
-                  <MessageCircle className="h-4 w-4" />
-                </Button>
-              </Link>
-
-              {/* Notifications Dropdown */}
-              {showNotifications && (
-                <div className="fixed left-1/2 transform -translate-x-1/2 lg:left-auto lg:transform-none lg:right-48 xl:right-8 top-16 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                  <div className="p-3 sm:p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
-                    <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Notifications</h3>
-                    {notifications.some(n => !n.is_read) && (
-                      <button
-                        onClick={handleMarkAllAsRead}
-                        className="text-xs sm:text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="max-h-60 sm:max-h-96 overflow-y-auto">
-                    {loading ? (
-                      <div className="p-3 sm:p-4 text-center text-gray-500 text-sm">Chargement...</div>
-                    ) : notifications.length === 0 ? (
-                      <div className="p-3 sm:p-4 text-center text-gray-500 text-sm">
-                        Aucune notification
-                      </div>
-                    ) : (
-                      notifications.slice(0, 5).map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50 ${
-                            !notification.is_read ? 'bg-blue-50' : ''
-                          }`}
-                        >
-                          <div className="flex items-start space-x-2 sm:space-x-3">
-                            <div className="flex-shrink-0 mt-1">
-                              {getPriorityIcon(notification.priority)}
-                            </div>
-
-                            <div className="flex-1 min-w-0">
-                              <Link
-                                to={getActionUrl(notification)}
-                                onClick={() => handleMarkAsRead(notification.id)}
-                                className="block hover:no-underline"
-                              >
-                                <h4 className="text-xs sm:text-sm font-medium text-gray-900 leading-tight">
-                                  {notification.title}
-                                </h4>
-                                <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-tight">
-                                  {notification.message}
-                                </p>
-                                <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-2">
-                                  {new Date(notification.created_at).toLocaleDateString()}
-                                </p>
-                              </Link>
-                            </div>
-
-                            {!notification.is_read && (
-                              <button
-                                onClick={() => handleMarkAsRead(notification.id)}
-                                className="flex-shrink-0 text-gray-400 hover:text-gray-600 p-1"
-                                title="Marquer comme lu"
-                              >
-                                <Check className="h-3 w-3 sm:h-4 sm:w-4" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="p-2 sm:p-3 border-t border-gray-200 text-center">
-                    <button
-                      onClick={showFullNotifications}
-                      className="text-xs sm:text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      View all notifications
-                    </button>
-                  </div>
-                </div>
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-pink-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-4">
+              {/* Mobile menu button for admin */}
+              {user?.role === 'admin' && onMenuClick && (
+                <button
+                  onClick={onMenuClick}
+                  className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+                >
+                  <Menu className="h-5 w-5 text-gray-600" />
+                </button>
               )}
+
+              <Link
+                to={user?.role === 'admin' ? '/admin/dashboard' : '/app/dashboard'}
+                className="flex items-center space-x-2"
+              >
+                <div className="flex items-center mt-6">
+                  <img
+                    src={logo}
+                    alt="Logo Medicare Clinic"
+                    className="h-24 md:h-28 lg:h-32 w-auto object-contain my-2"
+                  />
+                </div>
+              </Link>
             </div>
 
-            {/* User Dropdown */}
-            <div className="relative" ref={userDropdownRef}>
-              <button
-                onClick={toggleUserDropdown}
-                className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <UserCircle className="h-6 w-6" />
-                <span className="hidden md:inline">{user?.username}</span>
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                  {user?.role}
-                </span>
-                <ChevronDown className="h-3 w-3" />
-              </button>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Notification Bell */}
+              <div className="relative flex items-center" ref={notificationDropdownRef}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleNotifications}
+                  className="relative"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Button>
 
-              {/* User Dropdown Menu */}
-              {showUserDropdown && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                  <div className="p-4 border-b border-gray-200">
-                    <div className="flex items-center space-x-3">
-                      <UserCircle className="h-8 w-8 text-gray-400" />
-                      <div>
-                        <p className="font-medium text-gray-900">{user?.name || user?.username}</p>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
-                      </div>
+                {/* Chat Icon Button */}
+                <Link
+                  to={user?.role === 'admin' ? '/admin/chat' : '/app/chat'}
+                  className="ml-2"
+                  title="Chat"
+                >
+                  <Button variant="ghost" size="sm" className="relative">
+                    <MessageCircle className="h-4 w-4" />
+                  </Button>
+                </Link>
+
+                {/* Notifications Dropdown */}
+                {showNotifications && (
+                  <div className="fixed left-1/2 transform -translate-x-1/2 lg:left-auto lg:transform-none lg:right-48 xl:right-8 top-16 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="p-3 sm:p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+                      <h3 className="font-semibold text-gray-800 text-sm sm:text-base">Notifications</h3>
+                      {notifications.some(n => !n.is_read) && (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="text-xs sm:text-sm text-blue-600 hover:text-blue-800"
+                        >
+                          Tout marquer comme lu
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="max-h-60 sm:max-h-96 overflow-y-auto">
+                      {loading ? (
+                        <div className="p-3 sm:p-4 text-center text-gray-500 text-sm">Chargement...</div>
+                      ) : notifications.length === 0 ? (
+                        <div className="p-3 sm:p-4 text-center text-gray-500 text-sm">
+                          Aucune notification
+                        </div>
+                      ) : (
+                        notifications.slice(0, 5).map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50 ${
+                              !notification.is_read ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <div className="flex items-start space-x-2 sm:space-x-3">
+                              <div className="flex-shrink-0 mt-1">
+                                {getPriorityIcon(notification.priority)}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <Link
+                                  to={getActionUrl(notification)}
+                                  onClick={() => handleMarkAsRead(notification.id)}
+                                  className="block hover:no-underline"
+                                >
+                                  <h4 className="text-xs sm:text-sm font-medium text-gray-900 leading-tight">
+                                    {notification.title}
+                                  </h4>
+                                  <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-tight">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-2">
+                                    {new Date(notification.created_at).toLocaleDateString()}
+                                  </p>
+                                </Link>
+                              </div>
+
+                              {!notification.is_read && (
+                                <button
+                                  onClick={() => handleMarkAsRead(notification.id)}
+                                  className="flex-shrink-0 text-gray-400 hover:text-gray-600 p-1"
+                                  title="Marquer comme lu"
+                                >
+                                  <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="p-2 sm:p-3 border-t border-gray-200 text-center">
+                      <button
+                        onClick={showFullNotifications}
+                        className="text-xs sm:text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        Voir toutes les notifications
+                      </button>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  <div className="py-2">
-                    {user?.role === 'admin' ? (
-                      <>
-                        <Link
-                          to="/admin/profile"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setShowUserDropdown(false)}
-                        >
-                          <Settings className="h-4 w-4 mr-3" />
-                          Profile Settings
-                        </Link>
-                        <Link
-                          to="/admin/dashboard"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setShowUserDropdown(false)}
-                        >
-                          <User className="h-4 w-4 mr-3" />
-                          Admin Dashboard
-                        </Link>
-                        <Link
-                          to="/admin/chat"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setShowUserDropdown(false)}
-                        >
-                          <MessageCircle className="h-4 w-4 mr-3" />
-                          Admin Chat
-                        </Link>
-                      </>
-                    ) : (
-                      <>
-                        <Link
-                          to="/app/dashboard"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setShowUserDropdown(false)}
-                        >
-                          <User className="h-4 w-4 mr-3" />
-                          Dashboard
-                        </Link>
-                        <Link
-                          to="/app/profile"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setShowUserDropdown(false)}
-                        >
-                          <Settings className="h-4 w-4 mr-3" />
-                          Profile Settings
-                        </Link>
-                        <Link
-                          to="/app/chat"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setShowUserDropdown(false)}
-                        >
-                          <MessageCircle className="h-4 w-4 mr-3" />
-                          Chat Support
-                        </Link>
-                      </>
-                    )}
-                  </div>
+              {/* User Dropdown */}
+              <div className="relative" ref={userDropdownRef}>
+                <button
+                  onClick={toggleUserDropdown}
+                  className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <UserCircle className="h-6 w-6" />
+                  <span className="hidden md:inline">{user?.username}</span>
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {user?.role}
+                  </span>
+                  <ChevronDown className="h-3 w-3" />
+                </button>
 
-                  <div className="border-t border-gray-200 py-2">
-                    <button
-                      onClick={() => {
-                        setShowUserDropdown(false);
-                        handleLogout();
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <LogOut className="h-4 w-4 mr-3" />
-                      Sign Out
-                    </button>
+                {/* User Dropdown Menu */}
+                {showUserDropdown && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <UserCircle className="h-8 w-8 text-gray-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{user?.name || user?.username}</p>
+                          <p className="text-sm text-gray-500 truncate" title={user?.email}>{user?.email}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="py-2">
+                      {user?.role === 'admin' ? (
+                        <>
+                          <Link
+                            to="/admin/profile"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            <Settings className="h-4 w-4 mr-3" />
+                            Paramètres du profil
+                          </Link>
+                          <Link
+                            to="/admin/dashboard"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            <User className="h-4 w-4 mr-3" />
+                            Tableau de bord admin
+                          </Link>
+                          <Link
+                            to="/admin/chat"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-3" />
+                            Chat admin
+                          </Link>
+                        </>
+                      ) : (
+                        <>
+                          <Link
+                            to="/app/dashboard"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            <User className="h-4 w-4 mr-3" />
+                            Tableau de bord
+                          </Link>
+                          <Link
+                            to="/app/profile"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            <Settings className="h-4 w-4 mr-3" />
+                            Paramètres du profil
+                          </Link>
+                          <Link
+                            to="/app/chat"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setShowUserDropdown(false)}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-3" />
+                            Support chat
+                          </Link>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="border-t border-gray-200 py-2">
+                      <button
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <LogOut className="h-4 w-4 mr-3" />
+                        Se déconnecter
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
+      </nav>
+
+      {/* Toast Notifications */}
+      <div className="fixed bottom-4 right-4 space-y-2 z-60">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`p-4 rounded-lg shadow-lg transition-all duration-300 ${
+              toast.type === 'success'
+                ? 'bg-green-500 text-white'
+                : toast.type === 'error'
+                ? 'bg-red-500 text-white'
+                : 'bg-blue-500 text-white'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm">{toast.message}</span>
+              <button
+                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                className="ml-4 text-white hover:text-gray-200"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
-    </nav>
+    </>
   );
 };
 

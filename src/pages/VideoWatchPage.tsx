@@ -119,7 +119,6 @@ const VideoWatchPage: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [videoLoading, setVideoLoading] = useState(true);
-  const [isSkipping, setIsSkipping] = useState(false);
   const [lastTap, setLastTap] = useState(0);
   
   // Comment actions state
@@ -221,7 +220,7 @@ const VideoWatchPage: React.FC = () => {
             }
           }
         } catch (localError) {
-          console.error('Failed to load progress from localStorage:', localError);
+          // Silent fail for localStorage errors
         }
       }
     };
@@ -388,16 +387,12 @@ const VideoWatchPage: React.FC = () => {
     const userData = localStorage.getItem('currentUser');
     const authType = localStorage.getItem('authType');
     
-    console.log('🔍 Auth check:', { userData: !!userData, authType });
-    
     if (userData && authType) {
       const user = JSON.parse(userData);
       
       if (authType === 'admin') {
-        console.log('👨‍💼 Admin user detected');
         setCurrentUser({ ...user, role: 'admin' });
       } else if (authType === 'user') {
-        console.log('👤 Regular user detected');
         setCurrentUser({ ...user, role: 'student' });
       }
     } else if (authUser) {
@@ -426,7 +421,6 @@ const VideoWatchPage: React.FC = () => {
         setError(response.data?.message || 'Failed to fetch video');
       }
     } catch (error: any) {
-      console.error('Failed to fetch video:', error);
       setError(error.response?.data?.message || error.message || 'Failed to fetch video');
     } finally {
       setLoading(false);
@@ -443,14 +437,6 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
     
     // Don't save progress if it's less than 1% (to avoid saving accidental clicks)
     if (progressPercentage < 1) return;
-
-    console.log('Saving progress:', {
-      videoId,
-      currentTime: currentTimeSeconds,
-      duration: durationSeconds,
-      progress: progressPercentage,
-      userId: currentUser.id
-    });
 
     // Save to backend
     const response = await axiosClient.post('/progress', {
@@ -476,8 +462,6 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
       localStorage.setItem(progressKey, JSON.stringify(progressData));
     }
   } catch (error) {
-    console.error('Failed to save progress:', error);
-    
     // Fallback: save to localStorage even if backend fails
     try {
       const progressPercentage = Math.min(100, Math.max(0, (currentTimeSeconds / durationSeconds) * 100));
@@ -493,7 +477,7 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
       };
       localStorage.setItem(progressKey, JSON.stringify(progressData));
     } catch (localError) {
-      console.error('Failed to save to localStorage:', localError);
+      // Silent fail for localStorage errors
     }
   }
 };
@@ -553,43 +537,56 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
       videoRef.current.pause();
     } else {
       videoRef.current.play().catch(error => {
-        console.error('Error playing video:', error);
         setVideoError('Failed to play video. Please try again.');
       });
     }
   };
 
-  // FIXED: Skip functions with proper timing and state management
+  // FIXED: Improved skip functions with better error handling and debouncing
   const skipForward = () => {
-    if (!videoRef.current || isSkipping) return;
+    const videoElement = videoRef.current;
+    if (!videoElement || videoElement.readyState < 2) return; // Don't skip if video isn't ready
     
-    setIsSkipping(true);
-    const currentTimeStamp = videoRef.current.currentTime;
-    const newTime = Math.min(currentTimeStamp + 10, videoRef.current.duration);
-    
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-    
-    // Reset skipping state after a short delay
-    setTimeout(() => {
-      setIsSkipping(false);
-    }, 100);
+    try {
+      const currentTimeStamp = videoElement.currentTime;
+      const newTime = Math.min(currentTimeStamp + 10, videoElement.duration || currentTimeStamp + 10);
+      
+      // Check if the new time is valid
+      if (newTime >= 0 && (newTime <= videoElement.duration || !videoElement.duration)) {
+        videoElement.currentTime = newTime;
+        setCurrentTime(newTime);
+        
+        // Save progress when user skips
+        if (currentUser && video && videoElement.duration) {
+          saveProgress(video.id, newTime, videoElement.duration);
+        }
+      }
+    } catch (error) {
+      // Silent fail - don't show error for skip operations
+    }
   };
 
   const skipBackward = () => {
-    if (!videoRef.current || isSkipping) return;
+    const videoElement = videoRef.current;
+    if (!videoElement || videoElement.readyState < 2) return; // Don't skip if video isn't ready
     
-    setIsSkipping(true);
-    const currentTimeStamp = videoRef.current.currentTime;
-    const newTime = Math.max(currentTimeStamp - 10, 0);
-    
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-    
-    // Reset skipping state after a short delay
-    setTimeout(() => {
-      setIsSkipping(false);
-    }, 100);
+    try {
+      const currentTimeStamp = videoElement.currentTime;
+      const newTime = Math.max(currentTimeStamp - 10, 0);
+      
+      // Check if the new time is valid
+      if (newTime >= 0 && newTime <= (videoElement.duration || Infinity)) {
+        videoElement.currentTime = newTime;
+        setCurrentTime(newTime);
+        
+        // Save progress when user skips
+        if (currentUser && video && videoElement.duration) {
+          saveProgress(video.id, newTime, videoElement.duration);
+        }
+      }
+    } catch (error) {
+      // Silent fail - don't show error for skip operations
+    }
   };
 
   const adjustVolume = (change: number) => {
@@ -617,14 +614,24 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
   };
 
   const seekTo = (percentage: number) => {
-    if (!videoRef.current || !duration) return;
-    const newTime = (percentage / 100) * duration;
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
+    const videoElement = videoRef.current;
+    if (!videoElement || !duration || videoElement.readyState < 2) return;
     
-    // Save progress when user seeks
-    if (currentUser && video) {
-      saveProgress(video.id, newTime, duration);
+    try {
+      const newTime = (percentage / 100) * duration;
+      
+      // Validate the seek time
+      if (newTime >= 0 && newTime <= duration) {
+        videoElement.currentTime = newTime;
+        setCurrentTime(newTime);
+        
+        // Save progress when user seeks
+        if (currentUser && video) {
+          saveProgress(video.id, newTime, duration);
+        }
+      }
+    } catch (error) {
+      // Silent fail for seek operations
     }
   };
 
@@ -665,7 +672,6 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
         setIsFullscreen(false);
       }
     } catch (error) {
-      console.error('Error toggling fullscreen:', error);
       showModal('Fullscreen Error', 'Unable to toggle fullscreen mode on this device.', 'error');
     }
   };
@@ -737,7 +743,6 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
         showModal('Error', response.data?.message || 'Failed to add comment', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to add comment:', error);
       showModal('Error', error.response?.data?.message || 'Failed to add comment', 'error');
     } finally {
       setSubmittingComment(false);
@@ -763,7 +768,6 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
         showModal('Error', response.data?.message || 'Failed to delete comment', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to delete comment:', error);
       showModal('Error', error.response?.data?.message || 'Failed to delete comment', 'error');
     }
   };
@@ -791,7 +795,6 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
         showModal('Error', response.data?.message || 'Failed to approve comment', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to approve comment:', error);
       showModal('Error', error.response?.data?.message || 'Failed to approve comment', 'error');
     } finally {
       setCommentActions(prev => ({ ...prev, [commentId]: null }));
@@ -825,7 +828,6 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
         showModal('Error', response.data?.message || 'Failed to reject comment', 'error');
       }
     } catch (error: any) {
-      console.error('Failed to reject comment:', error);
       showModal('Error', error.response?.data?.message || 'Failed to reject comment', 'error');
     } finally {
       setCommentActions(prev => ({ ...prev, [commentId]: null }));
@@ -848,26 +850,14 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
     
     const authType = localStorage.getItem('authType');
     
-    console.log('🔍 Comment visibility check:', {
-      authType,
-      currentUserRole: currentUser?.role,
-      totalComments: video.comments.length
-    });
-    
     // Direct check against localStorage for more reliability
     if (authType === 'admin') {
-      console.log('👨‍💼 Admin - showing ALL comments');
       return video.comments;
     } else {
       const filteredComments = video.comments.filter(comment => 
         comment.is_approved || 
         (currentUser && comment.user_id === currentUser.id)
       );
-      
-      console.log('👤 User - showing filtered comments:', {
-        total: video.comments.length,
-        visible: filteredComments.length
-      });
       
       return filteredComments;
     }
@@ -1084,8 +1074,7 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                       {/* Skip Backward */}
                       <button
                         onClick={skipBackward}
-                        disabled={isSkipping}
-                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors disabled:opacity-50 touch-manipulation"
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors touch-manipulation"
                         title="Skip backward 10s"
                       >
                         <SkipBack className="h-5 w-5" />
@@ -1106,8 +1095,7 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
                       {/* Skip Forward */}
                       <button
                         onClick={skipForward}
-                        disabled={isSkipping}
-                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors disabled:opacity-50 touch-manipulation"
+                        className="p-2 hover:bg-white/20 rounded-full text-white transition-colors touch-manipulation"
                         title="Skip forward 10s"
                       >
                         <SkipForward className="h-5 w-5" />
