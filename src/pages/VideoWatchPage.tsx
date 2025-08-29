@@ -733,17 +733,16 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
       if (response.data && response.data.success) {
         await fetchVideo(video.id);
         setNewComment('');
-        
         if (currentUser.role === 'admin') {
-          showModal('Comment Added', 'Your comment has been added successfully and is now visible to all users.', 'success');
+          showModal('Commentaire ajouté', 'Votre commentaire a été ajouté avec succès et est maintenant visible pour tous les utilisateurs.', 'success');
         } else {
-          showModal('Comment Submitted', 'Your comment has been submitted successfully! It will appear after admin approval.', 'success');
+          showModal('Commentaire soumis', 'Votre commentaire a été soumis avec succès ! Il apparaîtra après validation par un administrateur.', 'success');
         }
       } else {
-        showModal('Error', response.data?.message || 'Failed to add comment', 'error');
+  showModal('Erreur', response.data?.message || "Échec de l'ajout du commentaire", 'error');
       }
     } catch (error: any) {
-      showModal('Error', error.response?.data?.message || 'Failed to add comment', 'error');
+  showModal('Erreur', error.response?.data?.message || "Échec de l'ajout du commentaire", 'error');
     } finally {
       setSubmittingComment(false);
     }
@@ -763,12 +762,12 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
           comments: prev.comments.filter(comment => comment.id !== commentId)
         } : null);
         
-        showModal('Comment Deleted', 'The comment has been deleted successfully and removed from the video.', 'success');
+  showModal('Commentaire supprimé', 'Le commentaire a été supprimé avec succès et retiré de la vidéo.', 'success');
       } else {
-        showModal('Error', response.data?.message || 'Failed to delete comment', 'error');
+  showModal('Erreur', response.data?.message || "Échec de la suppression du commentaire", 'error');
       }
     } catch (error: any) {
-      showModal('Error', error.response?.data?.message || 'Failed to delete comment', 'error');
+  showModal('Erreur', error.response?.data?.message || "Échec de la suppression du commentaire", 'error');
     }
   };
 
@@ -790,12 +789,12 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
           )
         } : null);
         
-        showModal('Comment Approved', 'The comment has been approved successfully and is now visible to all users.', 'success');
+  showModal('Commentaire approuvé', 'Le commentaire a été approuvé avec succès et est maintenant visible pour tous les utilisateurs.', 'success');
       } else {
-        showModal('Error', response.data?.message || 'Failed to approve comment', 'error');
+  showModal('Erreur', response.data?.message || "Échec de l'approbation du commentaire", 'error');
       }
     } catch (error: any) {
-      showModal('Error', error.response?.data?.message || 'Failed to approve comment', 'error');
+  showModal('Erreur', error.response?.data?.message || "Échec de l'approbation du commentaire", 'error');
     } finally {
       setCommentActions(prev => ({ ...prev, [commentId]: null }));
     }
@@ -823,12 +822,12 @@ const saveProgress = async (videoId: number, currentTimeSeconds: number, duratio
           )
         } : null);
         
-        showModal('Comment Rejected', 'The comment has been rejected and is no longer visible to regular users.', 'success');
+  showModal('Commentaire rejeté', "Le commentaire a été rejeté et n'est plus visible pour les utilisateurs réguliers.", 'success');
       } else {
-        showModal('Error', response.data?.message || 'Failed to reject comment', 'error');
+  showModal('Erreur', response.data?.message || "Échec du rejet du commentaire", 'error');
       }
     } catch (error: any) {
-      showModal('Error', error.response?.data?.message || 'Failed to reject comment', 'error');
+  showModal('Erreur', error.response?.data?.message || "Échec du rejet du commentaire", 'error');
     } finally {
       setCommentActions(prev => ({ ...prev, [commentId]: null }));
     }
