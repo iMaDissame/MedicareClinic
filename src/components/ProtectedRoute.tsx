@@ -13,12 +13,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isAuthenticated, authType, isLoading } = useAuth();
 
-  console.log('🔒 ProtectedRoute check:', {
-    isAuthenticated,
-    authType,
-    isLoading,
-    requiredAuthType
-  });
+  
 
   if (isLoading) {
     return (
@@ -29,16 +24,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!isAuthenticated) {
-    console.log('🔒 Redirecting to login - not authenticated');
+    
     return <Navigate to="/login" replace />;
   }
 
   if (requiredAuthType && authType !== requiredAuthType) {
-    console.log(`🔒 Redirecting to unauthorized - expected ${requiredAuthType}, got ${authType}`);
+    
     return <Navigate to="/unauthorized" replace />;
   }
 
-  console.log('🔒 Access granted');
+  
   return <>{children}</>;
 };
 

@@ -96,10 +96,10 @@ const UserProgress: React.FC = () => {
     
     try {
       setLoading(true);
-      console.log('Making API call to:', `/admin/progress/users/${userId}`); // Debug log
+      // Debug log
       
       const response = await axiosClient.get(`/admin/progress/users/${userId}`);
-      console.log('API response:', response.data); // Debug log
+      
       
       if (response.data.success) {
         // Ensure progress_details has proper structure
@@ -121,7 +121,7 @@ const UserProgress: React.FC = () => {
           progress_details: formattedDetails
         });
         setShowUserModal(true);
-        console.log('Modal should be shown now'); // Debug log
+         // Debug log
       } else {
         console.error('API returned success: false'); // Debug log
         setError('Failed to load user details: API returned success: false');
@@ -172,7 +172,7 @@ const UserProgress: React.FC = () => {
   };
 
   const recalculateUserProgress = async (userId: string) => {
-    console.log('recalculateUserProgress called with userId:', userId); // Debug log
+     // Debug log
     
     if (!window.confirm('This will recalculate progress based on current video positions. Continue?')) return;
 
@@ -238,7 +238,7 @@ const UserProgress: React.FC = () => {
 
   // Test function to verify button clicks work
   const testButtonClick = (userId: string, action: string) => {
-    console.log(`Test button clicked for user ${userId}, action: ${action}`);
+    
     alert(`Button clicked: ${action} for user ${userId}`);
   };
 
