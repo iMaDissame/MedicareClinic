@@ -42,13 +42,6 @@ interface ProgressDetails {
   progress_details: VideoProgress[];
 }
 
-interface DebugInfo {
-  userId: string;
-  localStorage: any[];
-  database: any[];
-  inconsistencies: string[];
-}
-
 const UserProgress: React.FC = () => {
   const [usersProgress, setUsersProgress] = useState<UserProgress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,8 +49,6 @@ const UserProgress: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [userDetails, setUserDetails] = useState<ProgressDetails | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [showDebugModal, setShowDebugModal] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [refreshingUser, setRefreshingUser] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,7 +93,6 @@ const UserProgress: React.FC = () => {
   };
 
   const loadUserDetails = async (userId: string) => {
-    console.log('loadUserDetails called with userId:', userId); // Debug log
     
     try {
       setLoading(true);
@@ -140,53 +130,6 @@ const UserProgress: React.FC = () => {
       const errorMsg = 'Failed to load user details: ' + (err.response?.data?.message || err.message);
       console.error('Error in loadUserDetails:', err); // Debug log
       setError(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const debugUserProgress = async (userId: string) => {
-    console.log('debugUserProgress called with userId:', userId); // Debug log
-    
-    try {
-      setLoading(true);
-      
-      // Get database progress
-      const dbResponse = await axiosClient.get(`/admin/progress/users/${userId}`);
-      const databaseProgress = dbResponse.data.success ? dbResponse.data.data.progress_details || [] : [];
-      
-      // Simulate getting localStorage data (this would normally be done on frontend)
-      const localStorageData = [];
-      
-      // Find inconsistencies
-      const inconsistencies = [];
-      
-      databaseProgress.forEach((dbItem: any) => {
-        if (dbItem.progress < 0 || dbItem.progress > 100) {
-          inconsistencies.push(`Video ${dbItem.video_title}: Invalid progress value ${dbItem.progress}%`);
-        }
-        
-        if (dbItem.progress >= 95 && !dbItem.completed) {
-          inconsistencies.push(`Video ${dbItem.video_title}: Progress is ${dbItem.progress}% but not marked as completed`);
-        }
-        
-        if (dbItem.current_time && dbItem.duration && dbItem.current_time > dbItem.duration) {
-          inconsistencies.push(`Video ${dbItem.video_title}: Current time (${dbItem.current_time}s) exceeds duration (${dbItem.duration}s)`);
-        }
-      });
-      
-      setDebugInfo({
-        userId,
-        localStorage: localStorageData,
-        database: databaseProgress,
-        inconsistencies
-      });
-      
-      setShowDebugModal(true);
-      console.log('Debug modal should be shown now'); // Debug log
-    } catch (err: any) {
-      console.error('Error in debugUserProgress:', err); // Debug log
-      setError('Failed to debug user progress: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -522,8 +465,8 @@ const UserProgress: React.FC = () => {
 
       {/* User Details Modal */}
       {showUserModal && userDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-6">
+          <div className="bg-white rounded-lg shadow-xl w-full mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto p-4 sm:p-6 max-w-sm sm:max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-6xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
                 Détails de la progression pour {userDetails.user.name}
@@ -537,7 +480,7 @@ const UserProgress: React.FC = () => {
                   className="text-red-600 hover:text-red-800"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
-                  Reset All
+                  Réinitialiser tout
                 </Button>
                 <Button onClick={() => setShowUserModal(false)}>
                   Fermer
@@ -545,7 +488,7 @@ const UserProgress: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 gap-4 mb-6">
               <Card className="p-4">
                 <h4 className="font-medium mb-2">Progression globale</h4>
                 <div className="text-2xl font-bold text-blue-600">
@@ -573,7 +516,7 @@ const UserProgress: React.FC = () => {
             <div className="space-y-3">
               {userDetails.progress_details.length > 0 ? (
                 userDetails.progress_details.map((progress) => (
-                  <div key={progress.video_id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                  <div key={progress.video_id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-2">
                     <div className="flex-1">
                       <div className="font-medium">{progress.video_title}</div>
                       <div className="text-sm text-gray-500">
@@ -588,7 +531,7 @@ const UserProgress: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center space-x-4">
-                      <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <div className="w-full sm:w-24 bg-gray-200 rounded-full h-2">
                         <div
                           className={`h-2 rounded-full ${
                             progress.progress >= 95 ? 'bg-green-500' :
@@ -623,56 +566,6 @@ const UserProgress: React.FC = () => {
                   Aucune progression trouvée pour cet utilisateur.
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Debug Modal */}
-      {showDebugModal && debugInfo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-red-600">
-                Debug Progress Issues - User ID: {debugInfo.userId}
-              </h3>
-              <Button onClick={() => setShowDebugModal(false)}>Fermer</Button>
-            </div>
-            
-            {debugInfo.inconsistencies.length > 0 && (
-              <Card className="p-4 mb-4 border-red-200 bg-red-50">
-                <h4 className="font-medium text-red-800 mb-2">Issues Found:</h4>
-                <ul className="list-disc list-inside space-y-1 text-sm text-red-700">
-                  {debugInfo.inconsistencies.map((issue, index) => (
-                    <li key={index}>{issue}</li>
-                  ))}
-                </ul>
-              </Card>
-            )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="p-4">
-                <h4 className="font-medium mb-2">Database Progress ({debugInfo.database.length})</h4>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {debugInfo.database.map((item: any, index) => (
-                    <div key={index} className="text-sm border-l-2 border-blue-200 pl-2">
-                      <div className="font-medium">{item.video_title}</div>
-                      <div className="text-gray-600">
-                        Progress: {item.progress}% | 
-                        Time: {formatDuration(item.current_time)} / {formatDuration(item.duration)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-              
-              <Card className="p-4">
-                <h4 className="font-medium mb-2">LocalStorage Progress ({debugInfo.localStorage.length})</h4>
-                <div className="text-sm text-gray-600">
-                  <p>LocalStorage data would be shown here on the frontend.</p>
-                  <p className="mt-2">To view localStorage data, use browser developer tools.</p>
-                </div>
-              </Card>
             </div>
           </div>
         </div>

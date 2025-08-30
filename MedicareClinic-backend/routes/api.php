@@ -132,6 +132,7 @@ Route::middleware('auth:api,admin')->group(function () {
     Route::delete('comments/{comment}', [CommentController::class, 'destroy']);
     Route::post('/progress', [ProgressController::class, 'store']);
     Route::get('user-stats/{user}', [ProgressController::class, 'getUserStats']);
+    Route::get('user-progress/{user}/{video}', [ProgressController::class, 'getUserVideoProgress']);
 });
 
 // Chat routes - accessible by both guards

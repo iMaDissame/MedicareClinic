@@ -211,17 +211,14 @@ const Dashboard: React.FC = () => {
   };
 
   // Enhanced progress calculation for statistics
+  // Only consider published videos for stats
+  const publishedVideos = videos.filter(v => v.is_published);
+  const publishedVideoIds = publishedVideos.map(v => v.id);
   const completedVideos = progress.filter(p => {
     const progressValue = parseFloat(p.progress?.toString() || '0');
-    return p.completed === true || progressValue >= 95;
+    return (p.completed === true || progressValue >= 95) && publishedVideoIds.includes(typeof p.videoId === 'string' ? parseInt(p.videoId) : p.videoId);
   }).length;
-
-  const inProgressVideos = progress.filter(p => {
-    const progressValue = parseFloat(p.progress?.toString() || '0');
-    return progressValue > 0 && progressValue < 95 && !p.completed;
-  }).length;
-
-  const notStartedVideos = Math.max(0, videos.length - completedVideos - inProgressVideos);
+  const notCompletedVideos = publishedVideos.length - completedVideos;
 
   const averageProgress = progress.length > 0
     ? Math.round(progress.reduce((sum, p) => {
@@ -281,15 +278,15 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
           <Card className="p-3 md:p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
             <div className="flex items-center">
               <div className="p-2 md:p-3 bg-blue-100 rounded-lg md:rounded-xl">
                 <BookOpen className="h-4 w-4 md:h-6 md:w-6 text-blue-600" />
               </div>
               <div className="ml-2 md:ml-4">
-                <p className="text-xs md:text-sm font-medium text-gray-600">Vidéos disponibles</p>
-                <p className="text-lg md:text-2xl font-bold text-gray-900">{videos.length}</p>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Vidéos publiées</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900">{publishedVideos.length}</p>
               </div>
             </div>
           </Card>
@@ -308,24 +305,12 @@ const Dashboard: React.FC = () => {
 
           <Card className="p-3 md:p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
             <div className="flex items-center">
-              <div className="p-2 md:p-3 bg-orange-100 rounded-lg md:rounded-xl">
-                <TrendingUp className="h-4 w-4 md:h-6 md:w-6 text-orange-600" />
+              <div className="p-2 md:p-3 bg-gray-100 rounded-lg md:rounded-xl">
+                <TrendingUp className="h-4 w-4 md:h-6 md:w-6 text-gray-600" />
               </div>
               <div className="ml-2 md:ml-4">
-                <p className="text-xs md:text-sm font-medium text-gray-600">En cours</p>
-                <p className="text-lg md:text-2xl font-bold text-gray-900">{inProgressVideos}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-3 md:p-6 bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 border-0">
-            <div className="flex items-center">
-              <div className="p-2 md:p-3 bg-yellow-100 rounded-lg md:rounded-xl">
-                <Calendar className="h-4 w-4 md:h-6 md:w-6 text-yellow-600" />
-              </div>
-              <div className="ml-2 md:ml-4">
-                <p className="text-xs md:text-sm font-medium text-gray-600">Expiration de l'accès</p>
-                <p className="text-lg md:text-2xl font-bold text-gray-900">{getAccessDaysRemaining()}d</p>
+                <p className="text-xs md:text-sm font-medium text-gray-600">Non terminée</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900">{notCompletedVideos}</p>
               </div>
             </div>
           </Card>
@@ -347,31 +332,19 @@ const Dashboard: React.FC = () => {
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="h-2 rounded-full bg-green-500"
-                    style={{ width: `${videos.length > 0 ? (completedVideos / videos.length) * 100 : 0}%` }}
+                    style={{ width: `${publishedVideos.length > 0 ? (completedVideos / publishedVideos.length) * 100 : 0}%` }}
                   ></div>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-xs md:text-sm mb-1">
-                  <span className="text-gray-600">En cours</span>
-                  <span className="font-medium">{inProgressVideos} vidéos</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full bg-blue-500"
-                    style={{ width: `${videos.length > 0 ? (inProgressVideos / videos.length) * 100 : 0}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-xs md:text-sm mb-1">
-                  <span className="text-gray-600">Non commencées</span>
-                  <span className="font-medium">{notStartedVideos} vidéos</span>
+                  <span className="text-gray-600">Non terminée</span>
+                  <span className="font-medium">{notCompletedVideos} vidéos</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="h-2 rounded-full bg-gray-400"
-                    style={{ width: `${videos.length > 0 ? (notStartedVideos / videos.length) * 100 : 0}%` }}
+                    style={{ width: `${publishedVideos.length > 0 ? (notCompletedVideos / publishedVideos.length) * 100 : 0}%` }}
                   ></div>
                 </div>
               </div>

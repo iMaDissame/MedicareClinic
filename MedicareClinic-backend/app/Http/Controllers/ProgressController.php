@@ -13,6 +13,36 @@ use Illuminate\Support\Facades\Log;
 class ProgressController extends Controller
 {
     /**
+     * Reset progress for a specific user and video
+     */
+    public function resetUserVideoProgress(Request $request, $userId, $videoId): JsonResponse
+    {
+        try {
+            $progress = UserVideoProgress::where([
+                'user_id' => $userId,
+                'video_id' => $videoId
+            ])->first();
+
+            if ($progress) {
+                $progress->progress = 0;
+                $progress->current_time = 0;
+                $progress->completed = false;
+                $progress->last_watched_at = null;
+                $progress->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Progress reset successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reset progress: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    /**
      * Save user progress for a video
      */
     public function store(Request $request): JsonResponse
