@@ -692,15 +692,7 @@ const VideoWatchPage: React.FC = () => {
 
               {/* Overlay/Controls */}
               <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 transition-opacity duration-300 ${showControls || !isPlaying ? 'opacity-100' : 'opacity-0'}`}>
-                {/* Top Right */}
-                {/* <div className="absolute top-4 right-4 flex items-center space-x-2">
-                  <button onClick={shareVideo} className="p-2 bg-black/50 hover:bg-black/70 rounded-full text-white" title="Share video">
-                    <Share2 className="h-4 w-4" />
-                  </button>
-                  <button onClick={downloadVideo} className="p-2 bg-black/50 hover:bg-black/70 rounded-full text-white" title="Download video">
-                    <Download className="h-4 w-4" />
-                  </button>
-                </div> */}
+                
 
                 {/* Center Play/Pause */}
                 <div className="absolute inset-0 flex items-center justify-center">
